@@ -14,4 +14,5 @@ Logger::Logger(bool silent,std::ostream* destination)
 
 Logger::~Logger()
 {
+    
 }

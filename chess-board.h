@@ -4,8 +4,12 @@ class  ChessBoard
 {
 private:
     Logger* log;
-    ChessPieceBase** board;
+    ChessPieceBase*** board;
+    ChessPieceBase** createPawnRow(bool white);
+    ChessPieceBase** createEmptyRow(int row);
+    ChessPieceBase** createFirstRow(bool white);
 public:
-     ChessBoard(Logger* log);
+    void printBoard();
+    ChessBoard(Logger* log);
     ~ ChessBoard();
 };
