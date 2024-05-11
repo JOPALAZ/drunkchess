@@ -7,7 +7,24 @@ ChessPieceCode ChessPieceBase::getCode()
 }
 //todo peredelat vezde attack candidates potomu 4to esli ya natikajus' na empty to ja dolzhen delat 4ek jesli je to vrag, i jesli net to sri sebe v rot.
 // mojno o4en mnoho sokratit', sdelaj canmove i canattack metodami classa base i realizuj kak v queen ili bishop
-
+static bool kingNear(ChessPieceBase*** board, std::pair<int,int> pos)
+{
+    int i,j;
+    for(i=pos.first-1;i<pos.first+2;++i)
+    {
+        for(j=pos.second-1;j<pos.second+2;++j)
+        {
+            if(i>=0&&j>=0&&i<BOARDSIZE&&j<BOARDSIZE&&(i!=pos.first||j!=pos.second))
+            {
+                if(board[i][j]->getCode()==KING)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
 bool ChessPieceBase::isPlayable()
 {
     return playable;
@@ -126,9 +143,9 @@ ChessPiecePawn::ChessPiecePawn(int x, int y,bool color,Logger* log,ChessPieceBas
 std::vector<std::pair<int,int>> ChessPiecePawn::getMoveCandidates()
 {
     int y_ = y-2*white+1;
-    if(y_>=0&&y_<BOARDSIZE&&board[y_][x]->getCode()==NONE)
+    if(y_>=0&&y_<BOARDSIZE&&board[y_][x]->getCode()==EMPTY)
     {
-        return {{x,y_}};
+        return {{y_,x}};
     }
     return {};
 }
@@ -225,7 +242,6 @@ ChessPieceRook::ChessPieceRook(int x, int y,bool color,Logger* log,ChessPieceBas
     this->white=color;
     this->playable=true;
 }
-
 std::vector<std::pair<int,int>> ChessPieceRook::getMoveCandidates()
 {
     int i,j,k;
@@ -277,6 +293,10 @@ std::vector<std::pair<int,int>> ChessPieceRook::getAttackCandidates(bool all)
                     break;
                 }
             }
+            else if(all)
+            {
+                out.push_back({i,this->x});
+            }
         }
         for(k=this->x;k>=0&&k<BOARDSIZE;k+=j)
         {
@@ -291,6 +311,10 @@ std::vector<std::pair<int,int>> ChessPieceRook::getAttackCandidates(bool all)
                 {
                     break;
                 }
+            }
+            else if(all)
+            {
+                out.push_back({this->y,k});
             }
         }
     }
@@ -320,7 +344,7 @@ std::vector<std::pair<int,int>> ChessPieceBishop::getMoveCandidates()
     {
         i+=1-modY*2;
         j+=1-modX*2;
-        if(i<BOARDSIZE&&i>=0&&j<BOARDSIZE&&j>=0&&this->board[i][j]->getCode()!=EMPTY)
+        if(i<BOARDSIZE&&i>=0&&j<BOARDSIZE&&j>=0&&this->board[i][j]->getCode()==EMPTY)
         {
             out.push_back({i,j});
         }
@@ -365,31 +389,38 @@ std::vector<std::pair<int,int>> ChessPieceBishop::getAttackCandidates(bool all)
     {
         i+=1-modY*2;
         j+=1-modX*2;
-        if(i<BOARDSIZE&&i>=0&&j<BOARDSIZE&&j>=0&&this->board[i][j]->getCode()!=EMPTY)
+        if(i<BOARDSIZE&&i>=0&&j<BOARDSIZE&&j>=0)
         {
-            if(this->board[i][j]->isWhite()!=this->white)
+            if(this->board[i][j]->getCode()!=EMPTY)
+            {
+                if(this->board[i][j]->isWhite()!=this->white)
+                    out.push_back({i,j});
+                if(!modX&&!modY)
+                {
+                    modY=!modY;
+                    i=y;
+                    j=x;
+                }
+                else if(!modX&&modY)
+                {
+                    modX=!modX;
+                    i=y;
+                    j=x;
+                }
+                else if(modX&&modY)
+                {
+                    modY=!modY;
+                    i=y;
+                    j=x;                   
+                }
+                else
+                {
+                    return out;
+                }
+            }
+            else if(all)
+            {
                 out.push_back({i,j});
-            if(!modX&&!modY)
-            {
-                modY=!modY;
-                i=y;
-                j=x;
-            }
-            else if(!modX&&modY)
-            {
-                modX=!modX;
-                i=y;
-                j=x;
-            }
-            else if(modX&&modY)
-            {
-                modY=!modY;
-                i=y;
-                j=x;                   
-            }
-            else
-            {
-                return out;
             }
         }
         else
@@ -438,6 +469,31 @@ std::vector<std::pair<int,int>> ChessPieceQueen::getMoveCandidates()
     std::vector<std::pair<int,int>> out;
     bool modX = false, modY = false;
     int i,j,k,counter;
+    for(j=-1;j<2;j+=2)
+    {
+        for(i=this->y;i>=0&&i<BOARDSIZE;i+=j)
+        {
+            if(board[i][this->x]->getCode()==EMPTY)
+            {
+                out.push_back({i,this->x});
+            }
+            else if (i!=this->y)
+            {
+                break;
+            }
+        }
+        for(k=this->x;k>=0&&k<BOARDSIZE;k+=j)
+        {
+            if(board[this->y][k]->getCode()==EMPTY)
+            {
+                out.push_back({this->y,k});
+            }
+            else if (k!=this->x)
+            {
+                break;
+            }
+        }
+    }
     counter=0;
     i = this->y;
     j = this->x;
@@ -445,7 +501,7 @@ std::vector<std::pair<int,int>> ChessPieceQueen::getMoveCandidates()
     {
         i+=1-modY*2;
         j+=1-modX*2;
-        if(i<BOARDSIZE&&i>=0&&j<BOARDSIZE&&j>=0&&this->board[i][j]->getCode()!=EMPTY)
+        if(i<BOARDSIZE&&i>=0&&j<BOARDSIZE&&j>=0&&this->board[i][j]->getCode()==EMPTY)
         {
             out.push_back({i,j});
         }
@@ -471,32 +527,7 @@ std::vector<std::pair<int,int>> ChessPieceQueen::getMoveCandidates()
             }
             else
             {
-                for(j=-1;j<2;j+=2)
-                {
-                    for(i=this->y;i>=0&&i<BOARDSIZE;i+=j)
-                    {
-                        if(board[i][this->x]->getCode()==EMPTY)
-                        {
-                            out.push_back({i,this->x});
-                        }
-                        else if (i!=this->y)
-                        {
-                            break;
-                        }
-                    }
-                    for(k=this->x;k>=0&&k<BOARDSIZE;k+=j)
-                    {
-                        if(board[this->y][k]->getCode()==EMPTY)
-                        {
-                            out.push_back({this->y,k});
-                        }
-                        else if (k!=this->x)
-                        {
-                            break;
-                        }
-                    }
-                }
-                return out; 
+                return out;
             }
         }
     }
@@ -508,6 +539,47 @@ std::vector<std::pair<int,int>> ChessPieceQueen::getAttackCandidates(bool all)
     std::vector<std::pair<int,int>> out;
     bool modX = false, modY = false;
     int i,j,k,counter;
+    for(j=-1;j<2;j+=2)
+    {
+        for(i=this->y;i>=0&&i<BOARDSIZE;i+=j)
+        {
+            if(board[i][this->x]->getCode()!=EMPTY)
+            {
+                if(board[i][this->x]->isWhite()!=white)
+                {
+                    out.push_back({i,this->x});
+                    break;
+                }
+                else if (i!=this->y)
+                {
+                    break;
+                }
+            }
+            else if(all)
+            {
+                out.push_back({i,this->x});
+            }
+        }
+        for(k=this->x;k>=0&&k<BOARDSIZE;k+=j)
+        {
+            if(board[this->y][k]->getCode()!=EMPTY)
+            {
+                if(board[this->y][k]->isWhite()!=white)
+                {
+                    out.push_back({this->y,k});
+                    break;
+                }    
+                else if (k!=this->x)
+                {
+                    break;
+                }
+            }
+            else if(all)
+            {
+                out.push_back({this->y,k});
+            }
+        }
+    }
     counter=0;
     i = this->y;
     j = this->x;
@@ -515,64 +587,38 @@ std::vector<std::pair<int,int>> ChessPieceQueen::getAttackCandidates(bool all)
     {
         i+=1-modY*2;
         j+=1-modX*2;
-        if(i<BOARDSIZE&&i>=0&&j<BOARDSIZE&&j>=0&&this->board[i][j]->getCode()!=EMPTY)
+        if(i<BOARDSIZE&&i>=0&&j<BOARDSIZE&&j>=0)
         {
-            if(this->board[i][j]->isWhite()!=this->white)
-                out.push_back({i,j});
-            if(!modX&&!modY)
+            if(this->board[i][j]->getCode()!=EMPTY)
             {
-                modY=!modY;
-                i=y;
-                j=x;
-            }
-            else if(!modX&&modY)
-            {
-                modX=!modX;
-                i=y;
-                j=x;
-            }
-            else if(modX&&modY)
-            {
-                modY=!modY;
-                i=y;
-                j=x;                   
-            }
-            else
-            {
-                for(j=-1;j<2;j+=2)
+                if(this->board[i][j]->isWhite()!=this->white)
+                    out.push_back({i,j});
+                if(!modX&&!modY)
                 {
-                    for(i=this->y;i>=0&&i<BOARDSIZE;i+=j)
-                    {
-                        if(board[i][this->x]->getCode()!=EMPTY)
-                        {
-                            if(board[i][this->x]->isWhite()!=white)
-                            {
-                                out.push_back({i,this->x});
-                                break;
-                            }
-                            else if (i!=this->y)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    for(k=this->x;k>=0&&k<BOARDSIZE;k+=j)
-                    {
-                        if(board[this->y][k]->getCode()!=EMPTY)
-                        {
-                            if(board[this->y][k]->isWhite()!=white)
-                            {
-                                out.push_back({this->y,k});
-                                break;
-                            }    
-                            else if (k!=this->x)
-                            {
-                                break;
-                            }
-                        }
-                    }
+                    modY=!modY;
+                    i=y;
+                    j=x;
                 }
-                return out; 
+                else if(!modX&&modY)
+                {
+                    modX=!modX;
+                    i=y;
+                    j=x;
+                }
+                else if(modX&&modY)
+                {
+                    modY=!modY;
+                    i=y;
+                    j=x;                   
+                }
+                else
+                {
+                    return out;
+                }
+            }
+            else if(all)
+            {
+                out.push_back({i,j});
             }
         }
         else
@@ -597,40 +643,7 @@ std::vector<std::pair<int,int>> ChessPieceQueen::getAttackCandidates(bool all)
             }
             else
             {
-                for(j=-1;j<2;j+=2)
-                {
-                    for(i=this->y;i>=0&&i<BOARDSIZE;i+=j)
-                    {
-                        if(board[i][this->x]->getCode()!=EMPTY)
-                        {
-                            if(board[i][this->x]->isWhite()!=white)
-                            {
-                                out.push_back({i,this->x});
-                                break;
-                            }
-                            else if (i!=this->y)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    for(k=this->x;k>=0&&k<BOARDSIZE;k+=j)
-                    {
-                        if(board[this->y][k]->getCode()!=EMPTY)
-                        {
-                            if(board[this->y][k]->isWhite()!=white)
-                            {
-                                out.push_back({this->y,k});
-                                break;
-                            }    
-                            else if (k!=this->x)
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-                return out; 
+                return out;
             }
         }
     }
@@ -657,9 +670,9 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
     {
         for(j=this->x-1;j<this->x+2;++j)
         {
-            if(i>=0&&j>=0&&i<BOARDSIZE&&j<BOARDSIZE&&(i!=y||j!=x))
+            if(i>=0&&j>=0&&i<BOARDSIZE&&j<BOARDSIZE&&(i!=this->y||j!=this->x))
             {
-                if(board[i][j]->getCode()==EMPTY&&danger.find({i,j})==danger.end())
+                if(board[i][j]->getCode()==EMPTY&&danger.find({i,j})==danger.end()&&kingNear(this->board,{i,j}))
                 {
                     out.push_back({i,j});
                 }
@@ -687,9 +700,10 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all)
         {
             if(i>=0&&j>=0&&i<BOARDSIZE&&j<BOARDSIZE&&(i!=y||j!=x))
             {
-                if(board[i][j]->getCode()!=EMPTY&&danger.find({i,j})==danger.end()&&board[i][j]->isWhite()!=white)
+                if(board[i][j]->getCode()!=EMPTY)
                 {
-                    out.push_back({i,j});
+                    if(danger.find({i,j})==danger.end()&&board[i][j]->isWhite()!=white)
+                        out.push_back({i,j});
                 }
                 else if(all)
                 {
@@ -700,3 +714,4 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all)
     }
     return out;
 }
+

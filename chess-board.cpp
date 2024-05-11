@@ -59,6 +59,8 @@ std::set<std::pair<int,int>> ChessBoard::getDangerousPoints(ChessPieceBase*** bo
     }
     return out;
 }
+
+
 void ChessBoard::debugPrintDanger()
 {
     int i,j,k;
