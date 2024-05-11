@@ -1,4 +1,94 @@
 #include"chess-board.h"
+
+ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode code)
+{
+    switch (code)
+    {
+    case KING:
+        return new ChessPeiceKing(x,y,color,log,board);
+        break;
+    case QUEEN:
+        return new ChessPieceQueen(x,y,color,log,board);
+        break;
+    case BISHOP:
+        return new ChessPieceBishop(x,y,color,log,board);
+        break;
+    case KNIGHT:
+        return new ChessPieceKnight(x,y,color,log,board);
+        break;
+    case ROOK:
+        return new ChessPieceRook(x,y,color,log,board);
+        break;
+    case PAWN:
+        return new ChessPiecePawn(x,y,color,log,board);
+        break;
+    case EMPTY:
+        return new ChessPieceEmpty(x,y,log,board);
+        break;
+    default:
+        throw std::runtime_error("UNKNOWN OPTION");
+        break;
+    }
+}
+std::set<std::pair<int,int>> ChessBoard::getDangerousPoints(ChessPieceBase*** board, bool white)
+{
+    std::set<std::pair<int,int>> out;
+    std::vector<std::pair<int,int>> buf;
+    int i,j;
+    //std::cout<<std::endl<<std::endl<<std::endl<<std::endl;
+    for(i=0;i<BOARDSIZE;++i)
+    {
+        for(j=0;j<BOARDSIZE;++j)
+        {
+            //if(i==j&&j==7)
+            //{
+            //    std::cout<<"4to za huita?"<<std::endl;
+            //}
+            //std::cout<<"i: "<<i<<"j: "<<j<<'\t';
+            if(board[i][j]->isPlayable()&&board[i][j]->isWhite()!=white)
+            {
+                //std::cout<<"+";
+                buf = board[i][j]->getAttackCandidates(true);
+                for(std::pair<int,int>& el : buf)
+                {
+                    out.insert(el);
+                }
+            }
+            //std::cout<<std::endl;
+        }
+    }
+    return out;
+}
+void ChessBoard::debugPrintDanger()
+{
+    int i,j,k;
+    std::set<std::pair<int,int>> danger;
+    std::cout<<std::endl;
+    std::cout<<std::endl;
+    std::cout<<std::endl;
+    for(k=0;k<2;k++)
+    {    
+        danger = ChessBoard::getDangerousPoints(board,k);
+        for(i=0; i<8; i++)
+        {
+            for(j=0; j<8; j++)
+            {
+                if(danger.find({i,j})!=danger.end())
+                {
+                    std::cout<<"D"<<k<<" ";
+                }
+                else
+                {
+                    std::cout<<"S"<<k<<" ";
+                }
+            }
+            std::cout<<std::endl;
+        }
+        std::cout<<std::endl;
+        std::cout<<std::endl;
+        std::cout<<std::endl;
+    }
+}
 ChessBoard:: ChessBoard(Logger* log)
 :log(log)
 {
@@ -14,6 +104,7 @@ ChessBoard:: ChessBoard(Logger* log)
         board[i] = createEmptyRow(i);
     }
     log->log("ДОСКА СОЗДАЛАСЬ ЕПТА!!!");
+    auto test = getDangerousPoints(board, false);
 }
 ChessPieceBase** ChessBoard::createEmptyRow(int row)
 {
@@ -34,7 +125,7 @@ ChessPieceBase** ChessBoard::createFirstRow(bool white)
     out[1] = new ChessPieceKnight(1,y,white,log,board);
     out[2] = new ChessPieceBishop(2,y,white,log,board);
     out[3] = new ChessPieceQueen(3,y,white,log,board);
-    out[4] = new ChessPieceKnight(4,y,white,log,board); // tut dolzhen byt korol
+    out[4] = new ChessPeiceKing(4,y,white,log,board); // tut dolzhen byt korol
     out[5] = new ChessPieceBishop(5,y,white,log,board);
     out[6] = new ChessPieceKnight(6,y,white,log,board);
     out[7] = new ChessPieceRook(7,y,white,log,board);
@@ -63,6 +154,22 @@ void ChessBoard::printBoard()
             std::cout<<board[i][j]->print()<<' ';
         }
         std::cout<<std::endl;
+    }
+}
+void ChessBoard::clear()
+{
+    int i,j;
+    for(i=0;i<BOARDSIZE;++i)
+    {
+        for(j=0;j<BOARDSIZE;++j)
+        {
+            if(board[i][j]!=nullptr)
+            {
+                delete board[i][j];
+            }
+        }
+        delete[] board[i];
+        board[i] = createEmptyRow(i);
     }
 }
 ChessBoard::~ ChessBoard()

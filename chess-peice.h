@@ -24,17 +24,18 @@ public:
     bool isWhite();
     ChessPieceBase() = default;
     virtual std::vector<std::pair<int,int>> getMoveCandidates()=0;
-    virtual std::vector<std::pair<int,int>> getAttackcCandidates()=0;
-    virtual bool canMoveTo(int x,int y) = 0;
-    virtual bool canAttack(int x,int y) = 0;
-    virtual std::string print();
+    virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all)=0;
+    virtual bool canMoveTo(int x,int y);
+    virtual bool canAttack(int x,int y);
+    std::string print();
+    bool isPlayable();
 };
 class ChessPieceEmpty : public ChessPieceBase
 {
 public:
     ChessPieceEmpty(int x, int y,Logger* log,ChessPieceBase*** board);
     virtual std::vector<std::pair<int,int>> getMoveCandidates() override;
-    virtual std::vector<std::pair<int,int>> getAttackcCandidates() override;
+    virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all) override;
     virtual bool canMoveTo(int x,int y) override;
     virtual bool canAttack(int x,int y) override;
     ~ChessPieceEmpty();
@@ -44,9 +45,8 @@ class ChessPiecePawn : public ChessPieceBase
 public:
     ChessPiecePawn(int x, int y,bool color,Logger* log,ChessPieceBase*** board);
     virtual std::vector<std::pair<int,int>> getMoveCandidates() override;
-    virtual std::vector<std::pair<int,int>> getAttackcCandidates() override;
-    virtual bool canMoveTo(int x,int y) override;
-    virtual bool canAttack(int x,int y) override;
+    virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all) override;
+
     ~ChessPiecePawn();
 };
 class ChessPieceKnight : public ChessPieceBase
@@ -54,9 +54,8 @@ class ChessPieceKnight : public ChessPieceBase
 public:
     ChessPieceKnight(int x, int y,bool color,Logger* log,ChessPieceBase*** board);
     virtual std::vector<std::pair<int,int>> getMoveCandidates() override;
-    virtual std::vector<std::pair<int,int>> getAttackcCandidates() override;
-    virtual bool canMoveTo(int x,int y) override;
-    virtual bool canAttack(int x,int y) override;
+    virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all) override;
+
     ~ChessPieceKnight();
 };
 class ChessPieceRook : public ChessPieceBase
@@ -64,9 +63,8 @@ class ChessPieceRook : public ChessPieceBase
 public:
     ChessPieceRook(int x, int y,bool color,Logger* log,ChessPieceBase*** board);
     virtual std::vector<std::pair<int,int>> getMoveCandidates() override;
-    virtual std::vector<std::pair<int,int>> getAttackcCandidates() override;
-    virtual bool canMoveTo(int x,int y) override;
-    virtual bool canAttack(int x,int y) override;
+    virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all) override;
+
     ~ChessPieceRook();
 };
 class ChessPieceBishop : public ChessPieceBase
@@ -74,9 +72,8 @@ class ChessPieceBishop : public ChessPieceBase
 public:
     ChessPieceBishop(int x, int y,bool color,Logger* log,ChessPieceBase*** board);
     virtual std::vector<std::pair<int,int>> getMoveCandidates() override;
-    virtual std::vector<std::pair<int,int>> getAttackcCandidates() override;
-    virtual bool canMoveTo(int x,int y) override;
-    virtual bool canAttack(int x,int y) override;
+    virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all) override;
+
     ~ChessPieceBishop();
 };
 class ChessPieceQueen : public ChessPieceBase
@@ -84,8 +81,15 @@ class ChessPieceQueen : public ChessPieceBase
 public:
     ChessPieceQueen(int x, int y,bool color,Logger* log,ChessPieceBase*** board);
     virtual std::vector<std::pair<int,int>> getMoveCandidates() override;
-    virtual std::vector<std::pair<int,int>> getAttackcCandidates() override;
-    virtual bool canMoveTo(int x,int y) override;
-    virtual bool canAttack(int x,int y) override;
+    virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all) override;
+
     ~ChessPieceQueen();
+};
+class ChessPeiceKing : public ChessPieceBase
+{
+public:
+    ChessPeiceKing(int x, int y,bool color,Logger* log,ChessPieceBase*** board);
+    virtual std::vector<std::pair<int,int>> getMoveCandidates() override;
+    virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all) override;
+    ~ChessPeiceKing();
 };
