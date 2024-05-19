@@ -14,6 +14,8 @@ protected:
     Logger* log;
     ChessPieceBase*** board;
 public:
+    static ChessPieceBase*** deleteBoard(ChessPieceBase*** board);
+    static ChessPieceBase*** copyBoard(ChessPieceBase*** board);
     void printBoard();
     const std::pair<std::pair<int,int>,std::pair<int,int>> computeMove(bool white);
     bool performMove(const std::pair<std::pair<int,int>,std::pair<int,int>>& move);

@@ -214,8 +214,52 @@ bool ChessBoard::performMove(const std::pair<std::pair<int,int>,std::pair<int,in
     return false;
 }
 
+ChessPieceBase*** ChessBoard::deleteBoard(ChessPieceBase*** board)
+{
+    ChessPieceBase*** out = new ChessPieceBase** [BOARDSIZE];
+    int i,j;
+    if(board && out)
+    {
+        for(i=0;i<BOARDSIZE;++i)
+        {
+            out[i] = new ChessPieceBase* [BOARDSIZE];
+            if(board[i]&&out[i])
+            {
+                for(j=0;j<BOARDSIZE;++j)
+                {
+                    if(board[i][j])
+                        out[i][j] = ChessBoard::createPeice()
+                }
+            }
+            delete board[i];
+        }
+        delete board;
+    }
+    return nullptr;
+}
 
 
+ChessPieceBase*** ChessBoard::deleteBoard(ChessPieceBase*** board)
+{
+    int i,j;
+    if(board)
+    {
+        for(i=0;i<BOARDSIZE;++i)
+        {
+            if(board[i])
+            {
+                for(j=0;j<BOARDSIZE;++j)
+                {
+                    if(board[i][j])
+                        delete board[i][j];
+                }
+            }
+            delete board[i];
+        }
+        delete board;
+    }
+    return nullptr;
+}
 
 
 
