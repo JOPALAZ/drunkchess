@@ -4,14 +4,19 @@
 class  ChessBoard
 {
 private:
-    Logger* log;
-    ChessPieceBase*** board;
+
     ChessPieceBase** createPawnRow(bool white);
     ChessPieceBase** createEmptyRow(int row);
     ChessPieceBase** createFirstRow(bool white);
     ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code);
+protected:
+    unsigned long long score[2] = {0,0};
+    Logger* log;
+    ChessPieceBase*** board;
 public:
     void printBoard();
+    const std::pair<std::pair<int,int>,std::pair<int,int>> computeMove(bool white);
+    bool performMove(const std::pair<std::pair<int,int>,std::pair<int,int>>& move);
     ChessPieceBase*** getBoard() {return board;}
     void debugPrintDanger();
     ChessBoard(Logger* log);

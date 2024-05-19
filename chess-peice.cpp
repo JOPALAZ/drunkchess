@@ -70,11 +70,11 @@ std::string ChessPieceBase::print()
     out += ChessPieceBase::getSymb(this->code);
     return out;
 }
-bool ChessPieceBase::canMoveTo(int x, int y)
+bool ChessPieceBase::canMoveTo(const std::pair<int,int>& pnt)
 {
-    std::pair<int,int> pnt = {y,x};
+    
     std::vector<std::pair<int,int>> candidates = this->getMoveCandidates();
-    for(std::pair<int,int> cnd : candidates)
+    for(const std::pair<int,int>& cnd : candidates)
     {
         if(cnd == pnt)
         {
@@ -83,11 +83,10 @@ bool ChessPieceBase::canMoveTo(int x, int y)
     }
     return false;
 }
-bool ChessPieceBase::canAttack(int x, int y)
+bool ChessPieceBase::canAttack(const std::pair<int,int>& pnt)
 {
-    std::pair<int,int> pnt = {y,x};
     std::vector<std::pair<int,int>> candidates = this->getAttackCandidates(false);
-    for(std::pair<int,int> cnd : candidates)
+    for(const std::pair<int,int>& cnd : candidates)
     {
         if(cnd == pnt)
         {
@@ -113,13 +112,18 @@ std::vector<std::pair<int,int>> ChessPieceEmpty::getAttackCandidates(bool all)
 {
     return {};
 }
-bool ChessPieceEmpty::canMoveTo(int x, int y)
+bool ChessPieceEmpty::canMoveTo(const std::pair<int,int>& pnt)
 {
     return false;
 }
-bool ChessPieceEmpty::canAttack(int x, int y)
+bool ChessPieceEmpty::canAttack(const std::pair<int,int>& pnt)
 {
     return false;
+}
+void ChessPieceBase::move(const std::pair<int,int>& dest)
+{
+    this->x=dest.second;
+    this->y=dest.first;
 }
 ChessPieceEmpty::~ChessPieceEmpty()
 {

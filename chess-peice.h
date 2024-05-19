@@ -19,14 +19,16 @@ protected:
     int y=-1;
     static char getSymb(ChessPieceCode code);
 
+
 public:
+    void move(const std::pair<int,int>& dest);
     ChessPieceCode getCode();
     bool isWhite();
     ChessPieceBase() = default;
     virtual std::vector<std::pair<int,int>> getMoveCandidates()=0;
     virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all)=0;
-    virtual bool canMoveTo(int x,int y);
-    virtual bool canAttack(int x,int y);
+    virtual bool canMoveTo(const std::pair<int,int>& pnt);
+    virtual bool canAttack(const std::pair<int,int>& pnt);
     std::string print();
     bool isPlayable();
 };
@@ -36,8 +38,8 @@ public:
     ChessPieceEmpty(int x, int y,Logger* log,ChessPieceBase*** board);
     virtual std::vector<std::pair<int,int>> getMoveCandidates() override;
     virtual std::vector<std::pair<int,int>> getAttackCandidates(bool all) override;
-    virtual bool canMoveTo(int x,int y) override;
-    virtual bool canAttack(int x,int y) override;
+    virtual bool canMoveTo(const std::pair<int,int>& pnt) override;
+    virtual bool canAttack(const std::pair<int,int>& pnt) override;
     ~ChessPieceEmpty();
 };
 class ChessPiecePawn : public ChessPieceBase

@@ -174,6 +174,54 @@ void ChessBoard::clear()
         board[i] = createEmptyRow(i);
     }
 }
+
+
+const std::pair<std::pair<int,int>,std::pair<int,int>> ChessBoard::computeMove(bool white)
+{
+
+}
+bool ChessBoard::performMove(const std::pair<std::pair<int,int>,std::pair<int,int>>& move)
+{
+    ChessPieceBase* buf;
+    if(this->board!=nullptr)
+    {
+        if(this->board[move.first.first][move.first.second]->canAttack(move.second))
+        {
+            this->score[this->board[move.second.first][move.second.second]->isWhite()] += this->board[move.second.first][move.second.second]->getCode();
+            delete this->board[move.second.first][move.second.second];
+            this->board[move.second.first][move.second.second] = this->board[move.first.first][move.first.second];
+            this->board[move.first.first][move.first.second]->move(move.second);
+            this->board[move.first.first][move.first.second] = new ChessPieceEmpty(move.first.second,move.first.first,this->log,this->board);
+            return true;
+        }
+        else if(this->board[move.first.first][move.first.second]->canMoveTo(move.second))
+        {
+            if(this->board[move.second.first][move.second.second]->getCode()!=ROOK)
+            {
+                this->board[move.second.first][move.second.second]->move(move.first);
+                buf = this->board[move.second.first][move.second.second];
+                this->board[move.second.first][move.second.second] = this->board[move.first.first][move.first.second];
+                this->board[move.second.first][move.second.second]->move(move.second);
+                this->board[move.first.first][move.first.second] = buf;
+                return true;
+            }
+            else
+            {
+                throw std::logic_error("CASTLING IS NOT IMPLEMENTED (YET)");
+            }
+        }
+    }
+    return false;
+}
+
+
+
+
+
+
+
+
+
 ChessBoard::~ ChessBoard()
 {
 
