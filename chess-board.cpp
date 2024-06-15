@@ -1,6 +1,6 @@
 #include"chess-board.h"
 
-ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode code)
+ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board)
 {
     switch (code)
     {
@@ -178,6 +178,32 @@ void ChessBoard::clear()
 
 const std::pair<std::pair<int,int>,std::pair<int,int>> ChessBoard::computeMove(bool white)
 {
+    int i,j;
+    std::map<float,std::pair<int,int>> scoreTable;
+    ChessPieceBase*** imaginaryBoard = copyBoard(board);
+    std::vector<std::pair<int,int>> buf;
+    if(imaginaryBoard)
+    {
+        for(i=0;i<BOARDSIZE;++i)
+        {
+            for(j=0;j<BOARDSIZE;++j)
+            {
+                if(board[i][j]->isWhite()==white)
+                {
+                    revertBoard(imaginaryBoard,board);
+                    buf = board[i][j]->getAttackCandidates(false);
+                    for(std::pair<int,int> el : buf)
+                    {
+                        //map[performMove()]
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        throw std::runtime_error("NOT ENOUGHT MEMORY");
+    }
 
 }
 bool ChessBoard::performMove(const std::pair<std::pair<int,int>,std::pair<int,int>>& move)
@@ -214,9 +240,10 @@ bool ChessBoard::performMove(const std::pair<std::pair<int,int>,std::pair<int,in
     return false;
 }
 
-ChessPieceBase*** ChessBoard::deleteBoard(ChessPieceBase*** board)
+ChessPieceBase*** ChessBoard::copyBoard(ChessPieceBase*** board, bool notImaginary = false)
 {
     ChessPieceBase*** out = new ChessPieceBase** [BOARDSIZE];
+    ChessPieceBase* buf;
     int i,j;
     if(board && out)
     {
@@ -228,17 +255,63 @@ ChessPieceBase*** ChessBoard::deleteBoard(ChessPieceBase*** board)
                 for(j=0;j<BOARDSIZE;++j)
                 {
                     if(board[i][j])
-                        out[i][j] = ChessBoard::createPeice()
+                    {
+                        buf=nullptr;
+                        buf = ChessBoard::createPeice(board[i][j]->getX(),board[i][j]->getY(),board[i][j]->isWhite(),board[i][j]->getCode(),(Logger*)((size_t)(board[i][j]->getLogger())*notImaginary),out);
+                        if(buf)
+                        {
+                            out[i][j]=buf;
+                        }
+                        return nullptr;
+                    }     
                 }
             }
-            delete board[i];
+            return nullptr;
         }
-        delete board;
+        return out;
     }
     return nullptr;
 }
 
-
+void ChessBoard::revertBoard(ChessPieceBase*** imaginaryBoard,ChessPieceBase*** board)
+{
+    ChessPieceBase* buf;
+    int i,j;
+    if(board && imaginaryBoard)
+    {
+        for(i=0;i<BOARDSIZE;++i)
+        {
+            if(board[i]&&imaginaryBoard[i])
+            {
+                for(j=0;j<BOARDSIZE;++j)
+                {
+                    if(board[i][j])
+                    {
+                        buf=nullptr;
+                        buf = ChessBoard::createPeice(board[i][j]->getX(),board[i][j]->getY(),board[i][j]->isWhite(),board[i][j]->getCode(),nullptr,imaginaryBoard);
+                        if(buf)
+                        {
+                            delete imaginaryBoard[i][j];
+                            imaginaryBoard[i][j]=buf;
+                        }
+                        else
+                        {
+                            throw std::runtime_error("CRITICAL ERROR, IMPOSSIBLE TO REVERT BOARD");
+                        }
+                    }
+                    else
+                    {
+                        throw std::runtime_error("CRITICAL ERROR, IMPOSSIBLE TO REVERT BOARD");
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        throw std::runtime_error("CRITICAL ERROR, IMPOSSIBLE TO REVERT BOARD");
+    }
+}
 ChessPieceBase*** ChessBoard::deleteBoard(ChessPieceBase*** board)
 {
     int i,j;
@@ -262,7 +335,27 @@ ChessPieceBase*** ChessBoard::deleteBoard(ChessPieceBase*** board)
 }
 
 
-
+void ChessBoard::cycleFigure(std::pair<int,int> pos, bool color,ChessPieceCode code)
+{
+    ChessPieceCode code_;
+    if(pos.first>=0&&pos.second>=0&&pos.first<BOARDSIZE&&pos.second<BOARDSIZE)
+    {
+        if(board[pos.first][pos.second]==nullptr)
+        {
+            board[pos.first][pos.second] = createPeice(pos.second,pos.first,color,code,log,board);
+            return;
+        }
+        code_=board[pos.first][pos.second]->getCode();
+        delete board[pos.first][pos.second];
+        if(code_==EMPTY)
+        {
+            board[pos.first][pos.second] = createPeice(pos.second,pos.first,color,code,log,board);
+            return;
+        }
+            board[pos.first][pos.second] = createPeice(pos.second,pos.first,color,EMPTY,log,board);
+            return;
+    }
+}
 
 
 

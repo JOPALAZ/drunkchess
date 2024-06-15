@@ -22,6 +22,9 @@ protected:
 
 public:
     void move(const std::pair<int,int>& dest);
+    int getX() {return x;}
+    int getY() {return y;}
+    Logger* getLogger() {return log;}
     ChessPieceCode getCode();
     bool isWhite();
     ChessPieceBase() = default;

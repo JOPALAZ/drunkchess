@@ -1,6 +1,7 @@
 #pragma once
 #include"chess-peice.h"
 #include <set>
+#include <map>
 class  ChessBoard
 {
 private:
@@ -8,14 +9,15 @@ private:
     ChessPieceBase** createPawnRow(bool white);
     ChessPieceBase** createEmptyRow(int row);
     ChessPieceBase** createFirstRow(bool white);
-    ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code);
 protected:
     unsigned long long score[2] = {0,0};
     Logger* log;
     ChessPieceBase*** board;
 public:
+    static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board);
+    static void revertBoard(ChessPieceBase*** imgainaryBoard,ChessPieceBase*** board);
     static ChessPieceBase*** deleteBoard(ChessPieceBase*** board);
-    static ChessPieceBase*** copyBoard(ChessPieceBase*** board);
+    static ChessPieceBase*** copyBoard(ChessPieceBase*** board, bool notImaginary = false);
     void printBoard();
     const std::pair<std::pair<int,int>,std::pair<int,int>> computeMove(bool white);
     bool performMove(const std::pair<std::pair<int,int>,std::pair<int,int>>& move);
@@ -24,26 +26,6 @@ public:
     ChessBoard(Logger* log);
     static std::set<std::pair<int,int>> getDangerousPoints(ChessPieceBase*** board, bool white);
     void clear();
-    void cycleFigure(std::pair<int,int> pos, bool color,ChessPieceCode code)
-    {
-        ChessPieceCode code_;
-        if(pos.first>=0&&pos.second>=0&&pos.first<BOARDSIZE&&pos.second<BOARDSIZE)
-        {
-            if(board[pos.first][pos.second]==nullptr)
-            {
-                board[pos.first][pos.second] = createPeice(pos.second,pos.first,color,code);
-                return;
-            }
-            code_=board[pos.first][pos.second]->getCode();
-            delete board[pos.first][pos.second];
-            if(code_==EMPTY)
-            {
-                board[pos.first][pos.second] = createPeice(pos.second,pos.first,color,code);
-                return;
-            }
-                board[pos.first][pos.second] = createPeice(pos.second,pos.first,color,EMPTY);
-                return;
-        }
-    }
+    void cycleFigure(std::pair<int,int> pos, bool color,ChessPieceCode code);
     ~ ChessBoard();
 };
