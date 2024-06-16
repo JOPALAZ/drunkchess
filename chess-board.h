@@ -2,6 +2,22 @@
 #include"chess-peice.h"
 #include <set>
 #include <map>
+
+
+struct Move
+{
+    std::pair<int,int> start;
+    std::pair<int,int> end;
+};
+
+struct Move_Candidate
+{
+    Move move;
+    int dScore;
+};
+
+
+
 class  ChessBoard
 {
 private:
@@ -10,20 +26,21 @@ private:
     ChessPieceBase** createEmptyRow(int row);
     ChessPieceBase** createFirstRow(bool white);
 protected:
-    unsigned long long score[2] = {0,0};
+
     Logger* log;
     ChessPieceBase*** board;
+    int difficulty;
 public:
     static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board);
     static void revertBoard(ChessPieceBase*** imgainaryBoard,ChessPieceBase*** board);
     static ChessPieceBase*** deleteBoard(ChessPieceBase*** board);
     static ChessPieceBase*** copyBoard(ChessPieceBase*** board, bool notImaginary = false);
+    static int performMove(const Move& move,ChessPieceBase*** board);
     void printBoard();
-    const std::pair<std::pair<int,int>,std::pair<int,int>> computeMove(bool white);
-    bool performMove(const std::pair<std::pair<int,int>,std::pair<int,int>>& move);
+    const std::vector<Move_Candidate> computeMove(bool white);
     ChessPieceBase*** getBoard() {return board;}
     void debugPrintDanger();
-    ChessBoard(Logger* log);
+    ChessBoard(Logger* log,int difficulty);
     static std::set<std::pair<int,int>> getDangerousPoints(ChessPieceBase*** board, bool white);
     void clear();
     void cycleFigure(std::pair<int,int> pos, bool color,ChessPieceCode code);

@@ -91,8 +91,8 @@ void ChessBoard::debugPrintDanger()
         std::cout<<std::endl;
     }
 }
-ChessBoard:: ChessBoard(Logger* log)
-:log(log)
+ChessBoard:: ChessBoard(Logger* log,int difficulty)
+:log(log),difficulty(difficulty)
 {
     int i;
     board = new ChessPieceBase**[8];
@@ -176,9 +176,11 @@ void ChessBoard::clear()
 }
 
 
-const std::pair<std::pair<int,int>,std::pair<int,int>> ChessBoard::computeMove(bool white)
+const std::vector<Move_Candidate> ChessBoard::computeMove(bool white)
 {
-    int i,j;
+    int i,j,counter;
+    int dScore;
+    std::vector<Move_Candidate> out;
     std::map<float,std::pair<int,int>> scoreTable;
     ChessPieceBase*** imaginaryBoard = copyBoard(board);
     std::vector<std::pair<int,int>> buf;
@@ -194,7 +196,18 @@ const std::pair<std::pair<int,int>,std::pair<int,int>> ChessBoard::computeMove(b
                     buf = board[i][j]->getAttackCandidates(false);
                     for(std::pair<int,int> el : buf)
                     {
-                        //map[performMove()]
+                        dScore = performMove(Move{{i,j},el},imaginaryBoard);
+                        for(counter=0;counter<=out.size();++counter)
+                        {
+                            if(out.at(counter).dScore<dScore)
+                            {
+                                out.insert(out.begin()+counter,{Move{{i,j},el},dScore});
+                                if(out.size()>difficulty)
+                                {
+                                    out.pop_back();
+                                }
+                            }
+                        }                   
                     }
                 }
             }
@@ -206,30 +219,31 @@ const std::pair<std::pair<int,int>,std::pair<int,int>> ChessBoard::computeMove(b
     }
 
 }
-bool ChessBoard::performMove(const std::pair<std::pair<int,int>,std::pair<int,int>>& move)
+static int performMove(const Move& move,ChessPieceBase*** board)
 {
     ChessPieceBase* buf;
-    if(this->board!=nullptr)
+    int score;
+    if(board!=nullptr)
     {
-        if(this->board[move.first.first][move.first.second]->canAttack(move.second))
+        if(board[move.start.first][move.start.second]->canAttack(move.end))
         {
-            this->score[this->board[move.second.first][move.second.second]->isWhite()] += this->board[move.second.first][move.second.second]->getCode();
-            delete this->board[move.second.first][move.second.second];
-            this->board[move.second.first][move.second.second] = this->board[move.first.first][move.first.second];
-            this->board[move.first.first][move.first.second]->move(move.second);
-            this->board[move.first.first][move.first.second] = new ChessPieceEmpty(move.first.second,move.first.first,this->log,this->board);
-            return true;
+            score = board[move.end.first][move.end.second]->getCode();
+            delete board[move.end.first][move.end.second];
+            board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
+            board[move.start.first][move.start.second]->move(move.end);
+            board[move.start.first][move.start.second] = new ChessPieceEmpty(move.start.second,move.start.first,board[move.end.first][move.end.second]->getLogger(),board);
+            return score;
         }
-        else if(this->board[move.first.first][move.first.second]->canMoveTo(move.second))
+        else if(board[move.start.first][move.start.second]->canMoveTo(move.end))
         {
-            if(this->board[move.second.first][move.second.second]->getCode()!=ROOK)
+            if(board[move.end.first][move.end.second]->getCode()!=ROOK)
             {
-                this->board[move.second.first][move.second.second]->move(move.first);
-                buf = this->board[move.second.first][move.second.second];
-                this->board[move.second.first][move.second.second] = this->board[move.first.first][move.first.second];
-                this->board[move.second.first][move.second.second]->move(move.second);
-                this->board[move.first.first][move.first.second] = buf;
-                return true;
+                board[move.end.first][move.end.second]->move(move.start);
+                buf = board[move.end.first][move.end.second];
+                board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
+                board[move.end.first][move.end.second]->move(move.end);
+                board[move.start.first][move.start.second] = buf;
+                return 0; //pridumat' sposob kak scitat uron on chod'by
             }
             else
             {
@@ -237,7 +251,7 @@ bool ChessBoard::performMove(const std::pair<std::pair<int,int>,std::pair<int,in
             }
         }
     }
-    return false;
+    return 0;
 }
 
 ChessPieceBase*** ChessBoard::copyBoard(ChessPieceBase*** board, bool notImaginary = false)
