@@ -176,7 +176,7 @@ void ChessBoard::clear()
 }
 
 
-const std::vector<Move_Candidate> ChessBoard::computeMove(bool white)
+const std::vector<Move_Candidate> ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white,int difficulty)
 {
     int i,j,counter;
     int dScore;
