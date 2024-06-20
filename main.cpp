@@ -69,9 +69,9 @@ int main()
     //setlocale(LC_ALL, "ALL");
     int i,j;
     Logger* log = new Logger(false,&std::cout);
-    ChessBoard ch(log);
+    ChessBoard ch(log,5);
     //ch.clear();
-    sf::RectangleShape** squares= new sf::RectangleShape*[BOARDSIZE];
+    /*sf::RectangleShape** squares= new sf::RectangleShape*[BOARDSIZE];
     for(i=0;i<BOARDSIZE;++i)
     {
         squares[i] = new sf::RectangleShape[BOARDSIZE];
@@ -108,7 +108,12 @@ int main()
             }
         }
         window.display();
-    }
+    }*/
+    
+    ch.printBoard();
+    std::cout<<std::endl;
+    ChessBoard::performMove(ch.getBestMove(true),ch.getBoard());
+    ch.printBoard();
     return 0;
 
 }
