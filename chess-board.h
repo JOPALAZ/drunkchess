@@ -30,7 +30,7 @@ protected:
     Logger* log;
     ChessPieceBase*** board;
     int difficulty;
-    static const std::vector<Move_Candidate> recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty);
+    static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth);
 public:
     static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board);
     static void revertBoard(ChessPieceBase*** imgainaryBoard,ChessPieceBase*** board);
@@ -38,10 +38,10 @@ public:
     static ChessPieceBase*** copyBoard(ChessPieceBase*** board, bool notImaginary = false);
     static int performMove(const Move& move,ChessPieceBase*** board);
     void printBoard();
-    
+    Move getBestMove(bool white);
     ChessPieceBase*** getBoard() {return board;}
     void debugPrintDanger();
-    ChessBoard(Logger* log,int difficulty);
+    ChessBoard(Logger* log,int diffficulty);
     static std::set<std::pair<int,int>> getDangerousPoints(ChessPieceBase*** board, bool white);
     void clear();
     void cycleFigure(std::pair<int,int> pos, bool color,ChessPieceCode code);

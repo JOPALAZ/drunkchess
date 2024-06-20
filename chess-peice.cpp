@@ -102,6 +102,7 @@ ChessPieceEmpty::ChessPieceEmpty(int x, int y,Logger* log,ChessPieceBase*** boar
     this->y=y;
     this->code=EMPTY;
     this->board=board;
+    if(log)
     log->log("ПУСТОЙ КУСОК БЫЛ ВУПУКАН!!!!");
 }
 std::vector<std::pair<int,int>> ChessPieceEmpty::getMoveCandidates()
@@ -127,6 +128,7 @@ void ChessPieceBase::move(const std::pair<int,int>& dest)
 }
 ChessPieceEmpty::~ChessPieceEmpty()
 {
+    if(log)
     this->log->log("ПУСТОЙ ПУКАН БЫЛ ПРОПУКАН");
 }
 
@@ -142,6 +144,7 @@ ChessPiecePawn::ChessPiecePawn(int x, int y,bool color,Logger* log,ChessPieceBas
     this->board=board;
     this->white=color;
     this->playable=true;
+    if(log)
     log->log("ГВИТНИК НАРОДИВСЯ!!!!!!!");
 }
 std::vector<std::pair<int,int>> ChessPiecePawn::getMoveCandidates()
@@ -183,6 +186,7 @@ ChessPieceKnight::ChessPieceKnight(int x, int y,bool color,Logger* log,ChessPiec
     this->board=board;
     this->white=color;
     this->playable=true;
+    if(log)
     log->log("КОНЬ ВЫСРАЛСЯ!!!");
 }
 std::vector<std::pair<int,int>> ChessPieceKnight::getMoveCandidates()
