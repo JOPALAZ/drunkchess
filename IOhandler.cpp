@@ -1,0 +1,170 @@
+#include"IOhandler.h"
+
+void IOhandler::toLowercase(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c){ return std::tolower(c); });
+}
+IOhandler::IOhandler(std::ostream* output,std::istream* input)
+:output(output),input(input)
+{
+    std::string response;
+    std::ostream* out;
+    bool silent;
+    *output << "Do you want to log? [y/N] "<<std::flush;
+    std::getline(*input, response);
+    silent = response.empty() || response[0] == 'N' || response[0] == 'n';
+    if(!silent)
+    {
+        *output <<"Where do you want to log? [standart/file] "<<std::flush;
+        std::getline(*input, response);
+        toLowercase(response);
+        if(response == "standart")
+        {
+            out = &std::cout;
+        }
+        else if (response == "file")
+        {
+            *output <<"Enter filename (will be overwritten) "<<std::flush;
+            std::getline(*input, response);
+            toLowercase(response);
+            out = new std::ofstream(response,std::ofstream::out | std::ofstream::app);
+        }
+        else
+        {
+            *output <<"Unknown input, assuming - standart"<<std::flush;
+            out = &std::cout;
+        }
+    }
+    log = new Logger(silent,out);
+}
+void IOhandler::mainLoop()
+{
+    loop=true;
+    std::string response;
+    while(loop)
+    {
+        try
+        {
+            *output <<std::endl<<"~ (help for help): "<<std::flush;
+            std::getline(*input, response);
+            toLowercase(response);
+            processInput(response);
+        }
+        catch (std::exception& ex)
+        {
+            std::cerr<<ex.what()<<"UNABLE TO PROCEED"<<std::endl;
+            loop=false;
+        }
+    }
+}
+std::vector<std::string> IOhandler::getPossibleOptions()
+{
+    std::vector<std::string> out;
+    out.push_back("exit\t\t\texits the game");
+    out.push_back("help\t\t\tdisplays this help");
+    if(!gameIsOn)
+    {
+        out.push_back("start\t\t\tstarts a game");
+    }
+    else
+    {
+        out.push_back("move <start:end>\t\t\tperforms specified move");
+        out.push_back("surrender\t\t\tyou instantly lose");
+        out.push_back("print\t\t\tprints a board");
+    }
+    return out;
+}
+void IOhandler::processInput(const std::string& response)
+{
+    std::string response_;
+    if(response=="help")
+    {
+        for(const std::string& el : getPossibleOptions())
+        {
+            *output<<el<<std::endl;
+        }
+    }
+    else if(response=="exit")
+    {
+        loop=false;
+    }
+    else if(!gameIsOn&&response=="start")
+    {
+        *output<<"Chose a side [w/b]"<<std::flush;
+        std::getline(*input, response_);
+        toLowercase(response_);
+        if(response_[0]=='w')
+        {
+            side = true;
+            gameIsOn=startGame();
+        }
+        else if(response_[0]=='b')
+        {
+            side = false;
+            gameIsOn=startGame();
+        }
+        else
+        {
+            *output<<"Unknown input "<<std::flush;
+        }
+    }
+    else if(gameIsOn&&response.substr(0,4)=="move")
+    {
+        move(response.substr(5,10));
+    }
+    else if(gameIsOn&&response=="surrender")
+    {
+        if(ch)
+        {
+            delete ch;
+            ch=nullptr;
+        }
+        *output<<"You lost!!! "<<std::flush;
+        gameIsOn=false;
+    }
+    else if(gameIsOn&&response=="print")
+    {
+        if(ch)
+        {
+            ch->printBoard(output);
+        }
+    }
+    else
+    {
+        *output<<"Unknown input "<<std::flush;
+    }
+}
+
+bool IOhandler::startGame()
+{
+    if(ch)
+    {
+        delete ch;
+        ch=nullptr;
+    }
+    std::string response_;
+    int difficulty;
+    *output<<"Chose a difficulty [1-5]"<<std::flush;
+    std::getline(*input, response_);
+    toLowercase(response_);
+    difficulty = std::stoi(response_);
+    if(difficulty>=1&&difficulty<=5)
+    {
+        ch = new ChessBoard(log,difficulty);
+        ch->printBoard(output);
+    }
+    return ch!=nullptr;
+}
+void IOhandler::move(const std::string& move)
+{
+
+}
+IOhandler::IOhandler()
+:output(&std::cout),input(&std::cin)
+{
+    log = new Logger(true,nullptr);
+
+}
+IOhandler::~IOhandler()
+{
+}

@@ -13,6 +13,7 @@ protected:
     ChessPieceCode code = NONE;
     bool white=true;
     bool playable=false;
+    bool moved=false;
     Logger* log=nullptr;
     ChessPieceBase*** board=nullptr;
     int x=-1;

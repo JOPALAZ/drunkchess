@@ -146,16 +146,16 @@ ChessPieceBase** ChessBoard::createPawnRow(bool white)
     return out;
 }
 
-void ChessBoard::printBoard()
+void ChessBoard::printBoard(std::ostream* out = &std::cout)
 {
     int i,j;
     for(i=0; i<8; i++)
     {
         for(j=0; j<8; j++)
         {
-            std::cout<<board[i][j]->print()<<' ';
+            *out<<board[i][j]->print()<<' ';
         }
-        std::cout<<std::endl;
+        *out<<std::endl;
     }
 }
 void ChessBoard::clear()
@@ -233,7 +233,7 @@ Move ChessBoard::getBestMove(bool white)
     {
         throw std::runtime_error("NOT ENOUGHT MEMORY");
     }
-    std::cout<<"SIZE: "<<out.size()<<std::endl;
+    //std::cout<<"SIZE: "<<out.size()<<std::endl;
     for(i=0;i<out.size();++i)
     {
         revertBoard(imaginaryBoard,board);
@@ -267,7 +267,10 @@ Move ChessBoard::getBestMove(bool white)
 
 
 }
-
+ChessPieceCode ChessBoard::askReplacement()
+{
+    return QUEEN;
+}
 const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty, int depth)
 {
     int i,j,counter;
@@ -326,7 +329,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
     {
         throw std::runtime_error("NOT ENOUGHT MEMORY");
     }
-    std::cout<<"SIZE: "<<out.size()<<std::endl;
+    //std::cout<<"SIZE: "<<out.size()<<std::endl;
     if(depth==difficulty)
     {
         deleteBoard(imaginaryBoard);
@@ -360,10 +363,11 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
         return maxScore;
     }
 }
-int ChessBoard::performMove(const Move& move,ChessPieceBase*** board)
+float ChessBoard::performMove(const Move& move,ChessPieceBase*** board)
 {
     ChessPieceBase* buf;
-    int score;
+    float score;
+    ChessPieceCode code;
     if(board!=nullptr)
     {
         if(board[move.start.first][move.start.second]->canAttack(move.end))
@@ -377,14 +381,33 @@ int ChessBoard::performMove(const Move& move,ChessPieceBase*** board)
         }
         else if(board[move.start.first][move.start.second]->canMoveTo(move.end))
         {
+
             if(board[move.end.first][move.end.second]->getCode()!=ROOK)
             {
+                score = 0;
+                for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getMoveCandidates())
+                {
+                    score -= board[coord.first][coord.second]->getCode()/2.f;
+                } 
                 board[move.end.first][move.end.second]->move(move.start);
+                if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*!board[move.end.first][move.end.second]->isWhite())
+                {   code=askReplacement();
+                    buf = createPeice(move.end.second,move.end.first,board[move.end.first][move.end.second]->isWhite(),
+                    code,board[move.end.first][move.end.second]->getLogger(),board);
+                    delete board[move.start.first][move.start.second];
+                    board[move.start.first][move.start.second] = board[move.end.first][move.end.second];
+                    board[move.end.first][move.end.second] = buf;
+                    return code;
+                }
                 buf = board[move.end.first][move.end.second];
                 board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
                 board[move.end.first][move.end.second]->move(move.end);
                 board[move.start.first][move.start.second] = buf;
-                return 0; //pridumat' sposob kak scitat uron on chod'by
+                for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getMoveCandidates())
+                {
+                    score += board[coord.first][coord.second]->getCode()/2.f;
+                } 
+                return score;
             }
             else
             {

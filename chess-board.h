@@ -31,13 +31,14 @@ protected:
     ChessPieceBase*** board;
     int difficulty;
     static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth);
+    static ChessPieceCode askReplacement();
 public:
     static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board);
     static void revertBoard(ChessPieceBase*** imgainaryBoard,ChessPieceBase*** board);
     static ChessPieceBase*** deleteBoard(ChessPieceBase*** board);
     static ChessPieceBase*** copyBoard(ChessPieceBase*** board, bool notImaginary = false);
-    static int performMove(const Move& move,ChessPieceBase*** board);
-    void printBoard();
+    static float performMove(const Move& move,ChessPieceBase*** board);
+    void printBoard(std::ostream* out = &std::cout);
     Move getBestMove(bool white);
     ChessPieceBase*** getBoard() {return board;}
     void debugPrintDanger();

@@ -56,6 +56,7 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "unordered_set": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "fstream": "cpp"
     }
 }

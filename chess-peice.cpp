@@ -125,6 +125,7 @@ void ChessPieceBase::move(const std::pair<int,int>& dest)
 {
     this->x=dest.second;
     this->y=dest.first;
+    moved=true;
 }
 ChessPieceEmpty::~ChessPieceEmpty()
 {
@@ -149,12 +150,22 @@ ChessPiecePawn::ChessPiecePawn(int x, int y,bool color,Logger* log,ChessPieceBas
 }
 std::vector<std::pair<int,int>> ChessPiecePawn::getMoveCandidates()
 {
-    int y_ = y-2*white+1;
-    if(y_>=0&&y_<BOARDSIZE&&board[y_][x]->getCode()==EMPTY)
+    std::vector<std::pair<int,int>> out={};
+    int delta = -2*white+1;
+    int y_=y+delta;
+    while(y_!=y+delta*(!moved+2))
     {
-        return {{y_,x}};
+        if(y_>=0&&y_<BOARDSIZE&&board[y_][x]->getCode()==EMPTY)
+        {
+            out.push_back({y_,x});
+            y_+=delta;
+        }
+        else
+        {
+            return out;
+        }
     }
-    return {};
+    return out;
 }
 std::vector<std::pair<int,int>> ChessPiecePawn::getAttackCandidates(bool all)
 {
