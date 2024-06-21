@@ -50,6 +50,10 @@ void IOhandler::mainLoop()
             toLowercase(response);
             processInput(response);
         }
+        catch(std::out_of_range& range)
+        {
+            *output<<"YOUR COMMAND '"<<response<<"' WAS GIVEN WRONG: "<<range.what()<<std::flush;
+        }
         catch (std::exception& ex)
         {
             std::cerr<<ex.what()<<"UNABLE TO PROCEED"<<std::endl;
@@ -151,13 +155,65 @@ bool IOhandler::startGame()
     if(difficulty>=1&&difficulty<=5)
     {
         ch = new ChessBoard(log,difficulty);
+        if(!this->side)
+        {
+            ch->performMove(ch->getBestMove(!this->side),ch->getBoard());
+        }
         ch->printBoard(output);
     }
     return ch!=nullptr;
 }
 void IOhandler::move(const std::string& move)
 {
-
+    Move mv = {{move[1]-48,move[0]-48},{move[4]-48,move[3]-48}};
+    Move bestMove;
+    if (ch->getBoard()[mv.start.first][mv.start.second]->isWhite()==this->side&&ch->getBoard()[mv.start.first][mv.start.second]->getCode()!=EMPTY)
+    {
+        try
+        {
+            ch->performMove(mv,ch->getBoard());
+        }
+        catch(std::exception& ex)
+        {
+            *output<<ex.what()<<std::endl;
+            return;
+        }
+        try
+        {
+            bestMove = ch->getBestMove(!this->side);
+            if(bestMove.start.first==-1)
+            {
+                *output<<"YOU WON!!!"<<std::endl;
+                if(ch)
+                {
+                    delete ch;
+                    ch=nullptr;
+                }
+                gameIsOn=false;
+                return;
+            }
+            ch->performMove(bestMove,ch->getBoard());
+            ch->printBoard(output);
+        }
+        catch(std::exception& ex)
+        {
+            *output<<"ENEMY: "<<ex.what()<<std::endl;
+            *output<<"YOU WON!!!"<<std::endl;
+            if(ch)
+            {
+                delete ch;
+                ch=nullptr;
+            }
+            gameIsOn=false;
+            return;
+        }
+        
+    }
+    else
+    {
+        *output<<"YOU CAN'T MOVE THAT FIGURE"<<std::flush;
+    }
+    
 }
 IOhandler::IOhandler()
 :output(&std::cout),input(&std::cin)

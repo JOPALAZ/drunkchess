@@ -8,12 +8,9 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "*.cpp",
-                "-lsfml-window",
-                "-lsfml-graphics",
-                "-lsfml-system",
                 "-fpermissive",
                 "-o",
-                "${workingDirectory}\\chess"
+                "${fileDirname}/chess"
             ],
             "options": {
                 "cwd": "${fileDirname}"

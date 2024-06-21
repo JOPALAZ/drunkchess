@@ -38,6 +38,7 @@ public:
     static ChessPieceBase*** deleteBoard(ChessPieceBase*** board);
     static ChessPieceBase*** copyBoard(ChessPieceBase*** board, bool notImaginary = false);
     static float performMove(const Move& move,ChessPieceBase*** board);
+    static void printImaginaryBoard(ChessPieceBase*** board,std::ostream* out = &std::cout);
     void printBoard(std::ostream* out = &std::cout);
     Move getBestMove(bool white);
     ChessPieceBase*** getBoard() {return board;}

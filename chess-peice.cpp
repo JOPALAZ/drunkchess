@@ -151,7 +151,7 @@ ChessPiecePawn::ChessPiecePawn(int x, int y,bool color,Logger* log,ChessPieceBas
 std::vector<std::pair<int,int>> ChessPiecePawn::getMoveCandidates()
 {
     std::vector<std::pair<int,int>> out={};
-    int delta = -2*white+1;
+    int delta = 2*white-1;
     int y_=y+delta;
     while(y_!=y+delta*(!moved+2))
     {
@@ -171,7 +171,7 @@ std::vector<std::pair<int,int>> ChessPiecePawn::getAttackCandidates(bool all)
 {
     std::vector<std::pair<int,int>> out;
     int i,y_;
-    y_=y-2*white+1;
+    y_=y+2*white-1;
     for(i=-1;i<=1;i+=2)
     {
         if(y_>=0&&y_<BOARDSIZE&&x+i>=0&&x+i<BOARDSIZE)
