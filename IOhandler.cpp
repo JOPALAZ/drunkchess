@@ -72,8 +72,8 @@ std::vector<std::string> IOhandler::getPossibleOptions()
     }
     else
     {
-        out.push_back("move <start:end>\t\t\tperforms specified move");
-        out.push_back("surrender\t\t\tyou instantly lose");
+        out.push_back("move <start:end>\tperforms specified move");
+        out.push_back("surrender\t\tyou instantly lose");
         out.push_back("print\t\t\tprints a board");
     }
     return out;
@@ -148,11 +148,11 @@ bool IOhandler::startGame()
     }
     std::string response_;
     int difficulty;
-    *output<<"Chose a difficulty [1-5]"<<std::flush;
+    *output<<"Chose a difficulty [1-10]"<<std::flush;
     std::getline(*input, response_);
     toLowercase(response_);
     difficulty = std::stoi(response_);
-    if(difficulty>=1&&difficulty<=5)
+    if(difficulty>=1&&difficulty<=10)
     {
         ch = new ChessBoard(log,difficulty);
         if(!this->side)
@@ -224,3 +224,5 @@ IOhandler::IOhandler()
 IOhandler::~IOhandler()
 {
 }
+// todo backtrack king being attacked and based on that get what cells cannot be moved and where they cant go
+// nuzno peredavat v recursive i v obicny specialny parameter bana hotby dlya figur i sostojanije shaha i scitat kajdy raz kogda idem dalse v recurcive.

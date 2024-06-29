@@ -212,7 +212,7 @@ Move ChessBoard::getBestMove(bool white)
                     for(std::pair<int,int> el : buf)
                     {
                         revertBoard(imaginaryBoard,board);
-                        dScore = performMove(Move{{i,j},el},imaginaryBoard);
+                        dScore = performMove(Move{{i,j},el},imaginaryBoard,true);
                         if(out.size()==0)
                         {
                             out.push_back({Move{{i,j},el},dScore});
@@ -249,7 +249,7 @@ Move ChessBoard::getBestMove(bool white)
     for(i=0;i<out.size();++i)
     {
         revertBoard(imaginaryBoard,board);
-        performMove(out.at(i).move,imaginaryBoard);
+        performMove(out.at(i).move,imaginaryBoard,true);
         if(i==0)
         {
             maxScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty,1);
@@ -308,7 +308,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
                     for(std::pair<int,int> el : buf)
                     {
                         revertBoard(imaginaryBoard,board);
-                        dScore = performMove(Move{{i,j},el},imaginaryBoard);
+                        dScore = performMove(Move{{i,j},el},imaginaryBoard,true);
                         if(out.size()==0)
                         {
                             out.push_back({Move{{i,j},el},dScore});
@@ -356,7 +356,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
         for(i=0;i<out.size();++i)
         {
             revertBoard(imaginaryBoard,board);
-            performMove(out.at(i).move,imaginaryBoard);
+            performMove(out.at(i).move,imaginaryBoard,true);
             if(i==0)
             {
                 maxScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty,depth+1);
@@ -379,56 +379,106 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
         return maxScore;
     }
 }
-float ChessBoard::performMove(const Move& move,ChessPieceBase*** board)
+float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool overrideRightess=false)
 {
     ChessPieceBase* buf;
     float score;
     ChessPieceCode code;
     if(board!=nullptr)
     {
-        if(board[move.start.first][move.start.second]->canAttack(move.end))
+        if(overrideRightess)
         {
-            score = board[move.end.first][move.end.second]->getCode();
-            delete board[move.end.first][move.end.second];
-            board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
-            board[move.start.first][move.start.second]->move(move.end);
-            board[move.start.first][move.start.second] = new ChessPieceEmpty(move.start.second,move.start.first,board[move.end.first][move.end.second]->getLogger(),board);
-            return score;
-        }
-        else if(board[move.start.first][move.start.second]->canMoveTo(move.end))
-        {
-            
-            if(board[move.end.first][move.end.second]->getCode()!=ROOK)
+            if(board[move.start.first][move.start.second]->isWhite()!=board[move.end.first][move.end.second]->isWhite()&&board[move.end.first][move.end.second]->getCode()!=EMPTY)
             {
-                score = 0;
-                for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getMoveCandidates())
-                {
-                    score -= board[coord.first][coord.second]->getCode()/2.f;
-                } 
-                board[move.end.first][move.end.second]->move(move.start);
-                if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.end.first][move.end.second]->isWhite())
-                {   code=askReplacement();
-                    buf = createPeice(move.end.second,move.end.first,board[move.end.first][move.end.second]->isWhite(),
-                    code,board[move.end.first][move.end.second]->getLogger(),board);
-                    delete board[move.start.first][move.start.second];
-                    board[move.start.first][move.start.second] = board[move.end.first][move.end.second];
-                    board[move.end.first][move.end.second] = buf;
-                    return code;
-                }
-                buf = board[move.end.first][move.end.second];
+                score = board[move.end.first][move.end.second]->getCode();
+                delete board[move.end.first][move.end.second];
                 board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
-                board[move.end.first][move.end.second]->move(move.end);
-                board[move.start.first][move.start.second] = buf;
-                for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getMoveCandidates())
-                {
-                    score += board[coord.first][coord.second]->getCode()/2.f;
-                } 
+                board[move.start.first][move.start.second]->move(move.end);
+                board[move.start.first][move.start.second] = new ChessPieceEmpty(move.start.second,move.start.first,board[move.end.first][move.end.second]->getLogger(),board);
                 return score;
             }
             else
             {
-                throw std::logic_error("CASTLING IS NOT IMPLEMENTED (YET)");
+                if(board[move.end.first][move.end.second]->getCode()!=ROOK)
+                {
+                    score = 0;
+                    for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getMoveCandidates())
+                    {
+                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                    } 
+                    board[move.end.first][move.end.second]->move(move.start);
+                    if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.end.first][move.end.second]->isWhite())
+                    {   code=askReplacement();
+                        buf = createPeice(move.end.second,move.end.first,board[move.end.first][move.end.second]->isWhite(),
+                        code,board[move.end.first][move.end.second]->getLogger(),board);
+                        delete board[move.start.first][move.start.second];
+                        board[move.start.first][move.start.second] = board[move.end.first][move.end.second];
+                        board[move.end.first][move.end.second] = buf;
+                        return code;
+                    }
+                    buf = board[move.end.first][move.end.second];
+                    board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
+                    board[move.end.first][move.end.second]->move(move.end);
+                    board[move.start.first][move.start.second] = buf;
+                    for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getMoveCandidates())
+                    {
+                        score += board[coord.first][coord.second]->getCode()/2.f;
+                    } 
+                    return score;
+                }
+                else
+                {
+                    throw std::logic_error("CASTLING IS NOT IMPLEMENTED (YET)");
+                }
             }
+        }
+        else
+        {
+            if(board[move.start.first][move.start.second]->canAttack(move.end))
+            {
+                score = board[move.end.first][move.end.second]->getCode();
+                delete board[move.end.first][move.end.second];
+                board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
+                board[move.start.first][move.start.second]->move(move.end);
+                board[move.start.first][move.start.second] = new ChessPieceEmpty(move.start.second,move.start.first,board[move.end.first][move.end.second]->getLogger(),board);
+                return score;
+            }
+            else if(board[move.start.first][move.start.second]->canMoveTo(move.end))
+            {
+                
+                if(board[move.end.first][move.end.second]->getCode()!=ROOK)
+                {
+                    score = 0;
+                    for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getMoveCandidates())
+                    {
+                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                    } 
+                    board[move.end.first][move.end.second]->move(move.start);
+                    if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.end.first][move.end.second]->isWhite())
+                    {   code=askReplacement();
+                        buf = createPeice(move.end.second,move.end.first,board[move.end.first][move.end.second]->isWhite(),
+                        code,board[move.end.first][move.end.second]->getLogger(),board);
+                        delete board[move.start.first][move.start.second];
+                        board[move.start.first][move.start.second] = board[move.end.first][move.end.second];
+                        board[move.end.first][move.end.second] = buf;
+                        return code;
+                    }
+                    buf = board[move.end.first][move.end.second];
+                    board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
+                    board[move.end.first][move.end.second]->move(move.end);
+                    board[move.start.first][move.start.second] = buf;
+                    for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getMoveCandidates())
+                    {
+                        score += board[coord.first][coord.second]->getCode()/2.f;
+                    } 
+                    return score;
+                }
+                else
+                {
+                    throw std::logic_error("CASTLING IS NOT IMPLEMENTED (YET)");
+                }
+            }
+            
         }
     }
     throw std::logic_error("CAN'T MOVE");
@@ -557,7 +607,122 @@ void ChessBoard::cycleFigure(std::pair<int,int> pos, bool color,ChessPieceCode c
     }
 }
 
+std::pair<int,int> ChessBoard::findKing(bool side, ChessPieceBase*** board)
+{
+    int i,j;
+    for(i=0;i<BOARDSIZE;++i)
+    {
+        for(j = side? 0:7;j<BOARDSIZE&&j>=0;i+=-1+2*side)
+        {
+            if(board[j][i]->getCode()==KING&&board[j][i]->isWhite()==side)
+                return {j,i};
+        }
+    }
+    throw std::logic_error("NO KING WAS FOUND -> ???");
+}
 
+bool ChessBoard::isDangerous(int distance,std::pair<int,int> kingPos,int8_t dX,int8_t dY, ChessPieceBase* suspect)
+{
+    ChessPieceCode code = suspect->getCode();
+    if(distance==0)
+    {
+        return(suspect->canAttack(kingPos));
+    }
+    if(dX!=0&&dY!=0)
+    {
+        return code==QUEEN||code==BISHOP;
+    }
+    else if(dX==0||dY==0)
+    {
+        return code==ROOK||code==QUEEN;
+    }
+    return false;
+}
+
+Special_Parameter ChessBoard::evaluateCheckMate(bool side,ChessPieceBase*** board)
+{
+    const int8_t rotationWheel[10]={0,1,1,1,0,-1,-1,-1,0,1};
+    ChessPieceBase* candidate;
+    Special_Parameter out{false,{},{}};
+    std::pair kingPosition = findKing(side,board);
+    Figure_Move_Restriction buf;
+    const int8_t shift=2;
+    int i,j,x,y,counter,distance;
+    for(j=-2;j<=2;j+=4)
+    {
+        for(i=-1;i<=1;i+=2)
+        {
+            x=kingPosition.second+j;
+            y=kingPosition.first+i;
+            if(x>=0&&x<BOARDSIZE&&y>=0&&y<BOARDSIZE&&board[y][x]->getCode()==KNIGHT&&board[y][x]->isWhite()!=side)
+            {
+                out.saveKingPath.push_back({y,x});
+                out.kingAttacked=true;
+            }
+            x=kingPosition.second+i;
+            y=kingPosition.first+j;
+            if(x>=0&&x<BOARDSIZE&&y>=0&&y<BOARDSIZE&&board[y][x]->getCode()==KNIGHT&&board[y][x]->isWhite()!=side)
+            {
+                out.saveKingPath.push_back({y,x});
+                out.kingAttacked=true;
+            }
+        }           
+    }
+    for(counter=0;counter<8;++counter)
+    {
+        buf={{-1,-1},{}};
+        x=kingPosition.second;
+        y=kingPosition.first;
+        x+=rotationWheel[counter];
+        y+=rotationWheel[counter+shift];
+        while(x<BOARDSIZE&&y<BOARDSIZE&&x>=0&&y>=0)
+        {
+            candidate = board[y][x];
+            buf.unrestrictedPositions.push_back({y,x});
+            if(candidate->getCode()!=EMPTY)
+            {
+                if(candidate->isWhite()!=side)
+                {
+                    if(isDangerous(distance,kingPosition,rotationWheel[counter],rotationWheel[counter+shift],candidate))
+                    {
+                        if(buf.position==std::pair{-1,-1})
+                        {
+                            if(out.kingAttacked)
+                            {
+                                throw std::logic_error("KING CANNOT BE ATTACKED FROM MORE THAN ONE SIDE");
+                            }
+                            out.kingAttacked=true;
+                            out.saveKingPath=buf.unrestrictedPositions;
+                        }
+                        else
+                        {
+                            out.restrictions.push_back(buf);
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    if(buf.position==std::pair{-1,-1})
+                    {
+                        buf.position={y,x};
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            ++distance;
+            x+=rotationWheel[counter];
+            y+=rotationWheel[counter+shift];
+        }
+    }
+    return out;
+}
 
 ChessBoard::~ ChessBoard()
 {

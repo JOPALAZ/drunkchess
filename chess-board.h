@@ -15,7 +15,17 @@ struct Move_Candidate
     Move move;
     int dScore;
 };
-
+struct Figure_Move_Restriction
+{
+    std::pair<int,int> position;
+    std::vector<std::pair<int,int>> unrestrictedPositions;
+};
+struct Special_Parameter
+{
+    bool kingAttacked;
+    std::vector<std::pair<int,int>> saveKingPath; 
+    std::vector<Figure_Move_Restriction> restrictions;
+};
 
 
 class  ChessBoard
@@ -33,12 +43,15 @@ protected:
     static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth);
     static ChessPieceCode askReplacement();
 public:
+    static bool isDangerous(int distance,std::pair<int,int> kingPos,int8_t dX,int8_t dY, ChessPieceBase* suspect);
     static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board);
     static void revertBoard(ChessPieceBase*** imgainaryBoard,ChessPieceBase*** board);
     static ChessPieceBase*** deleteBoard(ChessPieceBase*** board);
     static ChessPieceBase*** copyBoard(ChessPieceBase*** board, bool notImaginary = false);
-    static float performMove(const Move& move,ChessPieceBase*** board);
+    static float performMove(const Move& move,ChessPieceBase*** board,bool overrideRightess=false);
     static void printImaginaryBoard(ChessPieceBase*** board,std::ostream* out = &std::cout);
+    static Special_Parameter evaluateCheckMate(bool side,ChessPieceBase*** board);
+    static std::pair<int,int> findKing(bool side, ChessPieceBase*** board);
     void printBoard(std::ostream* out = &std::cout);
     Move getBestMove(bool white);
     ChessPieceBase*** getBoard() {return board;}
