@@ -26,6 +26,7 @@ public:
     int getX() {return x;}
     int getY() {return y;}
     Logger* getLogger() {return log;}
+    bool hasMoved() {return moved;}
     ChessPieceCode getCode();
     bool isWhite();
     ChessPieceBase() = default;

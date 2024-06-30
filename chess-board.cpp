@@ -411,7 +411,10 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
         {
             return out.at(0).dScore;
         }
-        return -999999;
+        else if(checkMate.kingAttacked)
+            return Mate;
+        else
+            return Pate;
     }
     else
     {
@@ -436,7 +439,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
         deleteBoard(imaginaryBoard);
         if(out.size()==0)
         {
-            return -999999;
+            return Mate;
         }
         return maxScore;
     }
@@ -453,6 +456,10 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
             if(board[move.start.first][move.start.second]->isWhite()!=board[move.end.first][move.end.second]->isWhite()&&board[move.end.first][move.end.second]->getCode()!=EMPTY)
             {
                 score = board[move.end.first][move.end.second]->getCode();
+                if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
+                {
+                    score += FirstMove; 
+                }
                 delete board[move.end.first][move.end.second];
                 board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
                 board[move.start.first][move.start.second]->move(move.end);
@@ -464,10 +471,14 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                 if(board[move.end.first][move.end.second]->getCode()!=ROOK)
                 {
                     score = 0;
-                    for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getMoveCandidates())
+                    for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
                         score -= board[coord.first][coord.second]->getCode()/2.f;
-                    } 
+                    }
+                    if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
+                    {
+                        score += FirstMove; 
+                    }
                     board[move.end.first][move.end.second]->move(move.start);
                     if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.end.first][move.end.second]->isWhite())
                     {   code=askReplacement();
@@ -482,7 +493,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
                     board[move.end.first][move.end.second]->move(move.end);
                     board[move.start.first][move.start.second] = buf;
-                    for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getMoveCandidates())
+                    for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
                         score += board[coord.first][coord.second]->getCode()/2.f;
                     } 
@@ -490,7 +501,53 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                 }
                 else
                 {
-                    throw std::logic_error("CASTLING IS NOT IMPLEMENTED (YET)");
+                    std::pair<int,int> bufMoveKing;
+                    std::pair<int,int> bufMoveRook;                    
+                    bool white;
+                    score = 0;
+                    for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
+                    {
+                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                    }
+                    for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
+                    {
+                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                    }
+                    if(move.end.second==0)
+                    {
+                        bufMoveKing={move.start.first,move.start.first-2};
+                        bufMoveRook={move.start.first,move.start.first-1};
+                    }
+                    else if(move.end.second==7)
+                    {
+                        bufMoveKing={move.start.first,move.start.first+2};
+                        bufMoveRook={move.start.first,move.start.first+1};
+                    }
+                    else
+                    {
+                        bufMoveKing={move.start.first+2-4*move.start.first==7,move.start.second};
+                        bufMoveKing={move.start.first+2-4*move.start.first==7,move.start.second};                            
+                    }
+                    board[move.end.first][move.end.second]->move(bufMoveRook);
+                    buf = board[move.end.first][move.end.second];
+                    board[move.end.first][move.end.second] = board[bufMoveRook.first][bufMoveRook.second];
+                    board[move.end.first][move.end.second]->move(move.end);
+                    board[bufMoveRook.first][bufMoveRook.second] = buf;
+                    board[move.start.first][move.start.second]->move(bufMoveKing);
+                    buf = board[move.start.first][move.start.second];
+                    board[move.start.first][move.start.second] = board[bufMoveKing.first][bufMoveRook.second];
+                    board[move.start.first][move.start.second]->move(move.start);
+                    board[bufMoveKing.first][bufMoveKing.second] = buf;
+                    for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveKing.second]->getAttackCandidates(true))
+                    {
+                        score += board[coord.first][coord.second]->getCode()/2.f;
+                    }
+                    for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveRook.second]->getAttackCandidates(true))
+                    {
+                        score += board[coord.first][coord.second]->getCode()/2.f;
+                    }
+                    score+=Castling;
+                    return score;
                 }
             }
         }
@@ -499,6 +556,10 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
             if(board[move.start.first][move.start.second]->canAttack(move.end))
             {
                 score = board[move.end.first][move.end.second]->getCode();
+                if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
+                {
+                    score += FirstMove; 
+                }
                 delete board[move.end.first][move.end.second];
                 board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
                 board[move.start.first][move.start.second]->move(move.end);
@@ -511,10 +572,14 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                 if(board[move.end.first][move.end.second]->getCode()!=ROOK)
                 {
                     score = 0;
-                    for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getMoveCandidates())
+                    for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
                         score -= board[coord.first][coord.second]->getCode()/2.f;
                     } 
+                    if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
+                    {
+                        score += FirstMove; 
+                    }
                     board[move.end.first][move.end.second]->move(move.start);
                     if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.end.first][move.end.second]->isWhite())
                     {   code=askReplacement();
@@ -529,7 +594,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
                     board[move.end.first][move.end.second]->move(move.end);
                     board[move.start.first][move.start.second] = buf;
-                    for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getMoveCandidates())
+                    for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
                         score += board[coord.first][coord.second]->getCode()/2.f;
                     } 
@@ -537,7 +602,53 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                 }
                 else
                 {
-                    throw std::logic_error("CASTLING IS NOT IMPLEMENTED (YET)");
+                    std::pair<int,int> bufMoveKing;
+                    std::pair<int,int> bufMoveRook;                    
+                    bool white;
+                    score = 0;
+                    for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
+                    {
+                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                    }
+                    for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
+                    {
+                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                    }
+                    if(move.end.second==0)
+                    {
+                        bufMoveKing={move.start.first,move.start.first-2};
+                        bufMoveRook={move.start.first,move.start.first-1};
+                    }
+                    else if(move.end.second==7)
+                    {
+                        bufMoveKing={move.start.first,move.start.first+2};
+                        bufMoveRook={move.start.first,move.start.first+1};
+                    }
+                    else
+                    {
+                        bufMoveKing={move.start.first+2-4*move.start.first==7,move.start.second};
+                        bufMoveKing={move.start.first+2-4*move.start.first==7,move.start.second};                            
+                    }
+                    board[move.end.first][move.end.second]->move(bufMoveRook);
+                    buf = board[move.end.first][move.end.second];
+                    board[move.end.first][move.end.second] = board[bufMoveRook.first][bufMoveRook.second];
+                    board[move.end.first][move.end.second]->move(move.end);
+                    board[bufMoveRook.first][bufMoveRook.second] = buf;
+                    board[move.start.first][move.start.second]->move(bufMoveKing);
+                    buf = board[move.start.first][move.start.second];
+                    board[move.start.first][move.start.second] = board[bufMoveKing.first][bufMoveRook.second];
+                    board[move.start.first][move.start.second]->move(move.start);
+                    board[bufMoveKing.first][bufMoveKing.second] = buf;
+                    for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveKing.second]->getAttackCandidates(true))
+                    {
+                        score += board[coord.first][coord.second]->getCode()/2.f;
+                    }
+                    for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveRook.second]->getAttackCandidates(true))
+                    {
+                        score += board[coord.first][coord.second]->getCode()/2.f;
+                    }
+                    score+=Castling;
+                    return score;
                 }
             }
             

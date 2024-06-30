@@ -3,7 +3,13 @@
 #include <set>
 #include <map>
 
-
+enum MovePrices
+{
+    Mate = -999999,
+    Pate = 0,
+    FirstMove = 1,
+    Castling = 50
+};
 struct Move
 {
     std::pair<int,int> start;

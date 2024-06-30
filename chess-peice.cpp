@@ -698,6 +698,21 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
             }
         }
     }
+    if(moved==false)
+    {
+        if(board[7*!white][0]->getCode()==ROOK&&board[7*!white][0]->isWhite()==white&&!board[7*!white][0]->hasMoved()&&board[7*!white][0]->canMoveTo({getY(),getX()-1})&&std::find(danger.begin(),danger.end(),std::pair<int,int>{getY(),getX()-2})==danger.end())
+        {
+            out.push_back({7*!white,0});
+        }
+        if(board[7*!white][7]->getCode()==ROOK&&board[7*!white][7]->isWhite()==white&&!board[7*!white][7]->hasMoved()&&board[7*!white][7]->canMoveTo({getY(),getX()+1})&&std::find(danger.begin(),danger.end(),std::pair<int,int>{getY(),getX()+2})==danger.end())
+        {
+            out.push_back({7*!white,7});
+        }
+        if(board[7*white][getX()]->getCode()==ROOK&&board[7*white][getX()]->isWhite()==white&&!board[7*white][getX()]->hasMoved()&&board[7*white][getX()]->canMoveTo({getY()+2*white-1,getX()})&&std::find(danger.begin(),danger.end(),std::pair<int,int>{getY()+4*white-2,getX()})==danger.end())
+        {
+            out.push_back({7*white,getX()});
+        }
+    }
     return out;
 }
 std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all)
