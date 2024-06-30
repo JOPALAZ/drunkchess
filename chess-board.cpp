@@ -60,7 +60,19 @@ std::set<std::pair<int,int>> ChessBoard::getDangerousPoints(ChessPieceBase*** bo
     return out;
 }
 
-
+int ChessBoard::findFigureIndex(const std::vector<Figure_Move_Restriction> restrictions,std::pair<int,int> pos)
+{
+    int counter = 0;
+    for(const Figure_Move_Restriction& el : restrictions)
+    {
+        if(el.position==pos)
+        {
+            return counter;
+        }
+        counter++;
+    }
+    return -1;
+}
 void ChessBoard::debugPrintDanger()
 {
     int i,j,k;
@@ -196,8 +208,11 @@ Move ChessBoard::getBestMove(bool white)
     std::map<float,std::pair<int,int>> scoreTable;
     ChessPieceBase*** imaginaryBoard = copyBoard(board);
     std::vector<std::pair<int,int>> buf;
+    Special_Parameter checkMate;
+    int id;
     if(imaginaryBoard)
     {
+        checkMate=evaluateCheckMate(white,imaginaryBoard);
         for(i=0;i<BOARDSIZE;++i)
         {
             for(j=0;j<BOARDSIZE;++j)
@@ -208,6 +223,11 @@ Move ChessBoard::getBestMove(bool white)
                     for(std::pair<int,int> el : board[i][j]->getMoveCandidates())
                     {
                         buf.push_back(el);
+                    }
+                    id=findFigureIndex(checkMate.restrictions,{i,j});
+                    if(checkMate.kingAttacked||id!=-1)
+                    {
+                        buf=filterMoves(buf,checkMate,id);
                     }
                     for(std::pair<int,int> el : buf)
                     {
@@ -283,6 +303,40 @@ ChessPieceCode ChessBoard::askReplacement()
 {
     return QUEEN;
 }
+std::vector<std::pair<int,int>> ChessBoard::filterMoves(const std::vector<std::pair<int,int>>& input,Special_Parameter checkMate,int usedIndex)
+{
+    std::vector<std::pair<int,int>> out;
+    std::vector<std::pair<int,int>> restrictions;
+    if(usedIndex<checkMate.restrictions.size()&&usedIndex!=-1)
+    {
+        if(checkMate.kingAttacked)
+        {
+            for(std::pair<int,int> el : checkMate.restrictions.at(usedIndex).unrestrictedPositions)
+            {
+                if(std::find(checkMate.saveKingPath.begin(),checkMate.saveKingPath.end(),el)!=checkMate.saveKingPath.end())
+                {
+                    restrictions.push_back(el);
+                }
+            }
+        }
+        else
+        {
+            restrictions=checkMate.restrictions.at(usedIndex).unrestrictedPositions;
+        }
+    }
+    else
+    {
+        restrictions=checkMate.saveKingPath;
+    }
+    for(std::pair<int,int> el : input)
+    {
+        if(std::find(restrictions.begin(),restrictions.end(),el)!=restrictions.end())
+        {
+            out.push_back(el);
+        }
+    }
+    return out;
+}
 const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty, int depth)
 {
     int i,j,counter;
@@ -292,8 +346,11 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
     std::map<float,std::pair<int,int>> scoreTable;
     ChessPieceBase*** imaginaryBoard = copyBoard(board);
     std::vector<std::pair<int,int>> buf;
+    Special_Parameter checkMate;
+    int id;
     if(imaginaryBoard)
     {
+        checkMate = evaluateCheckMate(white,imaginaryBoard);
         for(i=0;i<BOARDSIZE;++i)
         {
             for(j=0;j<BOARDSIZE;++j)
@@ -304,6 +361,11 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
                     for(std::pair<int,int> el : board[i][j]->getMoveCandidates())
                     {
                         buf.push_back(el);
+                    }
+                    id=findFigureIndex(checkMate.restrictions,{i,j});
+                    if(checkMate.kingAttacked||id!=-1)
+                    {
+                        buf=filterMoves(buf,checkMate,id);
                     }
                     for(std::pair<int,int> el : buf)
                     {
@@ -612,7 +674,7 @@ std::pair<int,int> ChessBoard::findKing(bool side, ChessPieceBase*** board)
     int i,j;
     for(i=0;i<BOARDSIZE;++i)
     {
-        for(j = side? 0:7;j<BOARDSIZE&&j>=0;i+=-1+2*side)
+        for(j = side? 0:7;j<BOARDSIZE&&j>=0;j+=-1+2*side)
         {
             if(board[j][i]->getCode()==KING&&board[j][i]->isWhite()==side)
                 return {j,i};

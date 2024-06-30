@@ -42,6 +42,7 @@ protected:
     int difficulty;
     static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth);
     static ChessPieceCode askReplacement();
+    static int findFigureIndex(const std::vector<Figure_Move_Restriction> restrictions,std::pair<int,int> pos);
 public:
     static bool isDangerous(int distance,std::pair<int,int> kingPos,int8_t dX,int8_t dY, ChessPieceBase* suspect);
     static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board);
@@ -50,6 +51,7 @@ public:
     static ChessPieceBase*** copyBoard(ChessPieceBase*** board, bool notImaginary = false);
     static float performMove(const Move& move,ChessPieceBase*** board,bool overrideRightess=false);
     static void printImaginaryBoard(ChessPieceBase*** board,std::ostream* out = &std::cout);
+    static std::vector<std::pair<int,int>> filterMoves(const std::vector<std::pair<int,int>>& input,Special_Parameter checkMate,int usedIndex);
     static Special_Parameter evaluateCheckMate(bool side,ChessPieceBase*** board);
     static std::pair<int,int> findKing(bool side, ChessPieceBase*** board);
     void printBoard(std::ostream* out = &std::cout);
