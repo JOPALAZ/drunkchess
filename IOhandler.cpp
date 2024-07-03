@@ -13,7 +13,11 @@ IOhandler::IOhandler(std::ostream* output,std::istream* input)
     *output << "Do you want to log? [y/N] "<<std::flush;
     std::getline(*input, response);
     silent = response.empty() || response[0] == 'N' || response[0] == 'n';
-    if(!silent)
+    if(!silent&&response[0]=='S')
+    {
+        server=true;
+    }
+    else if(!silent)
     {
         *output <<"Where do you want to log? [standart/file] "<<std::flush;
         std::getline(*input, response);
@@ -45,14 +49,16 @@ void IOhandler::mainLoop()
     {
         try
         {
-            *output <<std::endl<<"~ (help for help): "<<std::flush;
+            if(!server)
+                *output <<std::endl<<"~ (help for help): "<<std::flush;
             std::getline(*input, response);
             toLowercase(response);
             processInput(response);
         }
         catch(std::out_of_range& range)
         {
-            *output<<"YOUR COMMAND '"<<response<<"' WAS GIVEN WRONG: "<<range.what()<<std::flush;
+            if(!server)
+                *output<<"YOUR COMMAND '"<<response<<"' WAS GIVEN WRONG: "<<range.what()<<std::flush;
         }
         catch (std::exception& ex)
         {
@@ -85,7 +91,8 @@ void IOhandler::processInput(const std::string& response)
     {
         for(const std::string& el : getPossibleOptions())
         {
-            *output<<el<<std::endl;
+            if(!server)
+                *output<<el<<std::endl;
         }
     }
     else if(response=="exit")
@@ -94,7 +101,8 @@ void IOhandler::processInput(const std::string& response)
     }
     else if(!gameIsOn&&response=="start")
     {
-        *output<<"Chose a side [w/b]"<<std::flush;
+        if(!server) 
+            *output<<"Chose a side [w/b]"<<std::flush;
         std::getline(*input, response_);
         toLowercase(response_);
         if(response_[0]=='w')
@@ -109,7 +117,8 @@ void IOhandler::processInput(const std::string& response)
         }
         else
         {
-            *output<<"Unknown input "<<std::flush;
+            if(!server)
+                *output<<"Unknown input "<<std::flush;
         }
     }
     else if(gameIsOn&&response.substr(0,4)=="move")
@@ -148,7 +157,8 @@ bool IOhandler::startGame()
     }
     std::string response_;
     int difficulty;
-    *output<<"Chose a difficulty [1-10]"<<std::flush;
+    if(!server)
+        *output<<"Chose a difficulty [1-5]"<<std::flush;
     std::getline(*input, response_);
     toLowercase(response_);
     difficulty = std::stoi(response_);

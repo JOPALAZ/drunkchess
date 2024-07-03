@@ -13,6 +13,7 @@ private:
     std::istream* input;
     bool gameIsOn=false;
     bool loop = true;
+    bool server = false;
     bool side;
     bool startGame();
 

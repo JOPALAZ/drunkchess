@@ -32,6 +32,7 @@ ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode 
 }
 std::set<std::pair<int,int>> ChessBoard::getDangerousPoints(ChessPieceBase*** board, bool white)
 {
+
     std::set<std::pair<int,int>> out;
     std::vector<std::pair<int,int>> buf;
     int i,j;
@@ -49,9 +50,11 @@ std::set<std::pair<int,int>> ChessBoard::getDangerousPoints(ChessPieceBase*** bo
             {
                 //std::cout<<"+";
                 buf = board[i][j]->getAttackCandidates(true);
-                for(std::pair<int,int>& el : buf)
+                for(std::pair<int,int> el : buf)
                 {
-                    out.insert(el);
+
+                        out.insert(el);
+
                 }
             }
             //std::cout<<std::endl;
@@ -118,7 +121,7 @@ ChessBoard:: ChessBoard(Logger* log,int difficulty)
         board[i] = createEmptyRow(i);
     }
     log->log("ДОСКА СОЗДАЛАСЬ ЕПТА!!!");
-    auto test = getDangerousPoints(board, false);
+    //auto test = getDangerousPoints(board, false);
 }
 ChessPieceBase** ChessBoard::createEmptyRow(int row)
 {
@@ -448,6 +451,8 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
 {
     ChessPieceBase* buf;
     float score;
+    std::pair<int,int> bufMoveKing;
+    std::pair<int,int> bufMoveRook; 
     ChessPieceCode code;
     if(board!=nullptr)
     {
@@ -500,10 +505,8 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     return score;
                 }
                 else
-                {
-                    std::pair<int,int> bufMoveKing;
-                    std::pair<int,int> bufMoveRook;                    
-                    bool white;
+                {                
+                    bool white;                                     
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
@@ -515,29 +518,21 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     }
                     if(move.end.second==0)
                     {
-                        bufMoveKing={move.start.first,move.start.first-2};
-                        bufMoveRook={move.start.first,move.start.first-1};
+                        bufMoveKing={move.start.first,move.start.second-2};
+                        bufMoveRook={move.start.first,move.start.second-1};
                     }
                     else if(move.end.second==7)
                     {
-                        bufMoveKing={move.start.first,move.start.first+2};
-                        bufMoveRook={move.start.first,move.start.first+1};
+                        bufMoveKing={move.start.first,move.start.second+2};
+                        bufMoveRook={move.start.first,move.start.second+1};
                     }
                     else
                     {
                         bufMoveKing={move.start.first+2-4*move.start.first==7,move.start.second};
                         bufMoveKing={move.start.first+2-4*move.start.first==7,move.start.second};                            
                     }
-                    board[move.end.first][move.end.second]->move(bufMoveRook);
-                    buf = board[move.end.first][move.end.second];
-                    board[move.end.first][move.end.second] = board[bufMoveRook.first][bufMoveRook.second];
-                    board[move.end.first][move.end.second]->move(move.end);
-                    board[bufMoveRook.first][bufMoveRook.second] = buf;
-                    board[move.start.first][move.start.second]->move(bufMoveKing);
-                    buf = board[move.start.first][move.start.second];
-                    board[move.start.first][move.start.second] = board[bufMoveKing.first][bufMoveRook.second];
-                    board[move.start.first][move.start.second]->move(move.start);
-                    board[bufMoveKing.first][bufMoveKing.second] = buf;
+                    performMove({move.end,bufMoveRook},board,true);
+                    performMove({move.start,bufMoveKing},board,true);
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveKing.second]->getAttackCandidates(true))
                     {
                         score += board[coord.first][coord.second]->getCode()/2.f;
@@ -601,9 +596,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     return score;
                 }
                 else
-                {
-                    std::pair<int,int> bufMoveKing;
-                    std::pair<int,int> bufMoveRook;                    
+                {                   
                     bool white;
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
@@ -616,29 +609,21 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     }
                     if(move.end.second==0)
                     {
-                        bufMoveKing={move.start.first,move.start.first-2};
-                        bufMoveRook={move.start.first,move.start.first-1};
+                        bufMoveKing={move.start.first,move.start.second-2};
+                        bufMoveRook={move.start.first,move.start.second-1};
                     }
                     else if(move.end.second==7)
                     {
-                        bufMoveKing={move.start.first,move.start.first+2};
-                        bufMoveRook={move.start.first,move.start.first+1};
+                        bufMoveKing={move.start.first,move.start.second+2};
+                        bufMoveRook={move.start.first,move.start.second+1};
                     }
                     else
                     {
                         bufMoveKing={move.start.first+2-4*move.start.first==7,move.start.second};
                         bufMoveKing={move.start.first+2-4*move.start.first==7,move.start.second};                            
                     }
-                    board[move.end.first][move.end.second]->move(bufMoveRook);
-                    buf = board[move.end.first][move.end.second];
-                    board[move.end.first][move.end.second] = board[bufMoveRook.first][bufMoveRook.second];
-                    board[move.end.first][move.end.second]->move(move.end);
-                    board[bufMoveRook.first][bufMoveRook.second] = buf;
-                    board[move.start.first][move.start.second]->move(bufMoveKing);
-                    buf = board[move.start.first][move.start.second];
-                    board[move.start.first][move.start.second] = board[bufMoveKing.first][bufMoveRook.second];
-                    board[move.start.first][move.start.second]->move(move.start);
-                    board[bufMoveKing.first][bufMoveKing.second] = buf;
+                    performMove({move.end,bufMoveRook},board,true);
+                    performMove({move.start,bufMoveKing},board,true);
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveKing.second]->getAttackCandidates(true))
                     {
                         score += board[coord.first][coord.second]->getCode()/2.f;
