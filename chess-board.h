@@ -48,8 +48,8 @@ protected:
     int difficulty;
     static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth);
     static ChessPieceCode askReplacement();
-    static int findFigureIndex(const std::vector<Figure_Move_Restriction> restrictions,std::pair<int,int> pos);
 public:
+    static int findFigureIndex(const std::vector<Figure_Move_Restriction> restrictions,std::pair<int,int> pos);
     static bool isDangerous(int distance,std::pair<int,int> kingPos,int8_t dX,int8_t dY, ChessPieceBase* suspect);
     static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board);
     static void revertBoard(ChessPieceBase*** imgainaryBoard,ChessPieceBase*** board);

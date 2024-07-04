@@ -228,7 +228,7 @@ Move ChessBoard::getBestMove(bool white)
                         buf.push_back(el);
                     }
                     id=findFigureIndex(checkMate.restrictions,{i,j});
-                    if(checkMate.kingAttacked||id!=-1)
+                    if((checkMate.kingAttacked||id!=-1)&&board[i][j]->getCode()!=KING)
                     {
                         buf=filterMoves(buf,checkMate,id);
                     }
@@ -310,6 +310,7 @@ std::vector<std::pair<int,int>> ChessBoard::filterMoves(const std::vector<std::p
 {
     std::vector<std::pair<int,int>> out;
     std::vector<std::pair<int,int>> restrictions;
+
     if(usedIndex<checkMate.restrictions.size()&&usedIndex!=-1)
     {
         if(checkMate.kingAttacked)
@@ -366,7 +367,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
                         buf.push_back(el);
                     }
                     id=findFigureIndex(checkMate.restrictions,{i,j});
-                    if(checkMate.kingAttacked||id!=-1)
+                    if((checkMate.kingAttacked||id!=-1)&&board[i][j]->getCode()!=KING)
                     {
                         buf=filterMoves(buf,checkMate,id);
                     }
@@ -442,7 +443,10 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
         deleteBoard(imaginaryBoard);
         if(out.size()==0)
         {
-            return Mate;
+            if(checkMate.kingAttacked)
+                return Mate;
+            else
+                return Pate;
         }
         return maxScore;
     }
@@ -806,6 +810,7 @@ Special_Parameter ChessBoard::evaluateCheckMate(bool side,ChessPieceBase*** boar
     Figure_Move_Restriction buf;
     const int8_t shift=2;
     int i,j,x,y,counter,distance;
+    bool obstacle;
     for(j=-2;j<=2;j+=4)
     {
         for(i=-1;i<=1;i+=2)
@@ -829,6 +834,8 @@ Special_Parameter ChessBoard::evaluateCheckMate(bool side,ChessPieceBase*** boar
     for(counter=0;counter<8;++counter)
     {
         buf={{-1,-1},{}};
+        obstacle=false;
+        distance=0;
         x=kingPosition.second;
         y=kingPosition.first;
         x+=rotationWheel[counter];
@@ -841,12 +848,14 @@ Special_Parameter ChessBoard::evaluateCheckMate(bool side,ChessPieceBase*** boar
             {
                 if(candidate->isWhite()!=side)
                 {
+                    obstacle=true;
                     if(isDangerous(distance,kingPosition,rotationWheel[counter],rotationWheel[counter+shift],candidate))
                     {
                         if(buf.position==std::pair{-1,-1})
                         {
-                            if(out.kingAttacked)
+                            if(out.kingAttacked&&!obstacle)
                             {
+                                printImaginaryBoard(board);
                                 throw std::logic_error("KING CANNOT BE ATTACKED FROM MORE THAN ONE SIDE");
                             }
                             out.kingAttacked=true;

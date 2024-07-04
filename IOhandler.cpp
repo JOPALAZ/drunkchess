@@ -1,5 +1,36 @@
 #include"IOhandler.h"
 
+int patOrMate(bool side,ChessPieceBase*** board)
+{
+    int i,j,id;
+    Special_Parameter checkMate=ChessBoard::evaluateCheckMate(side,board);
+    std::vector<std::pair<int,int>> buf;
+    for(i=0;i<BOARDSIZE;++i)
+    {
+        for(j=0;j<BOARDSIZE;++j)
+        {
+            if(board[i][j]->isWhite()==side)
+            {
+                buf = board[i][j]->getAttackCandidates(false);
+                for(std::pair<int,int> el : board[i][j]->getMoveCandidates())
+                {
+                    buf.push_back(el);
+                }
+                id=ChessBoard::findFigureIndex(checkMate.restrictions,{i,j});
+                if((checkMate.kingAttacked||id!=-1)&&board[i][j]->getCode()!=KING)
+                {
+                    buf=ChessBoard::filterMoves(buf,checkMate,id);
+                }
+                if(!buf.empty())
+                {
+                    return 1;
+                }
+            }
+        }
+    }
+    return -1*checkMate.kingAttacked;
+}
+
 void IOhandler::toLowercase(std::string& str)
 {
     std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c){ return std::tolower(c); });
@@ -177,11 +208,27 @@ void IOhandler::move(const std::string& move)
 {
     Move mv = {{move[1]-48,move[0]-48},{move[4]-48,move[3]-48}};
     Move bestMove;
+    Special_Parameter checkMate;
+    bool isGood = true;
+    int id;
     if (ch->getBoard()[mv.start.first][mv.start.second]->isWhite()==this->side&&ch->getBoard()[mv.start.first][mv.start.second]->getCode()!=EMPTY)
     {
         try
         {
-            ch->performMove(mv,ch->getBoard());
+            checkMate = ChessBoard::evaluateCheckMate(this->side,ch->getBoard());
+            id =ChessBoard::findFigureIndex(checkMate.restrictions,mv.start);
+            if(id!=-1)
+            {
+               isGood=std::find(checkMate.restrictions.at(id).unrestrictedPositions.begin(),checkMate.restrictions.at(id).unrestrictedPositions.end(),mv.end)!=checkMate.restrictions.at(id).unrestrictedPositions.end();
+            }
+            if(checkMate.kingAttacked&&isGood)
+            {
+               isGood=std::find(checkMate.saveKingPath.begin(),checkMate.saveKingPath.end(),mv.end)!=checkMate.saveKingPath.end();
+            }
+            if(isGood)
+                ch->performMove(mv,ch->getBoard());
+            else
+                throw std::logic_error("CANT MOVE THERE");
         }
         catch(std::exception& ex)
         {
@@ -203,7 +250,27 @@ void IOhandler::move(const std::string& move)
                 return;
             }
             ch->performMove(bestMove,ch->getBoard());
+            id=patOrMate(side,ch->getBoard());
+            if(id==-1)
+            {
+                *output<<"YOU LOST!!!"<<std::endl;
+            }
+            else if(id==0)
+            {
+                *output<<"TIE!!!"<<std::endl;
+            }
             ch->printBoard(output);
+            if(id!=1)
+            {
+                if(ch)
+                {
+                    delete ch;
+                    ch=nullptr;
+                }
+                gameIsOn=false;
+                return;
+            }
+
         }
         catch(std::exception& ex)
         {
