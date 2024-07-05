@@ -1,5 +1,5 @@
 #include"chess-board.h"
-
+static int debugCounter=0;
 ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board)
 {
     switch (code)
@@ -352,8 +352,17 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
     std::vector<std::pair<int,int>> buf;
     Special_Parameter checkMate;
     int id;
+    if(depth==3)
+    {
+        debugCounter++;
+    }
     if(imaginaryBoard)
     {
+        if(debugCounter==1882)
+        {
+            std::cout<<"poslo"<<std::endl;
+            printImaginaryBoard(imaginaryBoard);
+        }
         checkMate = evaluateCheckMate(white,imaginaryBoard);
         for(i=0;i<BOARDSIZE;++i)
         {
@@ -460,6 +469,12 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
     ChessPieceCode code;
     if(board!=nullptr)
     {
+        if(board[move.end.first][move.end.second]->getCode()==KING)
+        {
+            std::cout<<std::endl<<std::endl;
+            printImaginaryBoard(board);
+            std::cout<<std::endl<<std::endl;
+        }
         if(overrideRightess)
         {
             if(board[move.start.first][move.start.second]->isWhite()!=board[move.end.first][move.end.second]->isWhite()&&board[move.end.first][move.end.second]->getCode()!=EMPTY)
@@ -780,15 +795,23 @@ std::pair<int,int> ChessBoard::findKing(bool side, ChessPieceBase*** board)
                 return {j,i};
         }
     }
+    std::cout<<std::endl<<"CRITICAL "<<debugCounter<<std::endl;
+    printImaginaryBoard(board);
+    std::cout<<std::endl<<std::endl;
     throw std::logic_error("NO KING WAS FOUND -> ???");
 }
 
 bool ChessBoard::isDangerous(int distance,std::pair<int,int> kingPos,int8_t dX,int8_t dY, ChessPieceBase* suspect)
 {
     ChessPieceCode code = suspect->getCode();
+    std::vector<std::pair<int,int>> buf;
     if(distance==0)
     {
-        return(suspect->canAttack(kingPos));
+        if(code==PAWN)
+        {
+            buf=suspect->getAttackCandidates(true);
+            return(std::find(buf.begin(),buf.end(),kingPos)!=buf.end());
+        }
     }
     if(dX!=0&&dY!=0)
     {
@@ -797,6 +820,66 @@ bool ChessBoard::isDangerous(int distance,std::pair<int,int> kingPos,int8_t dX,i
     else if(dX==0||dY==0)
     {
         return code==ROOK||code==QUEEN;
+    }
+    return false;
+}
+
+bool ChessBoard::simplifiedEvaluateCheckMate(bool side,std::pair<int,int> kingPosition,ChessPieceBase*** board)
+{
+    const int8_t rotationWheel[10]={0,1,1,1,0,-1,-1,-1,0,1};
+    ChessPieceBase* candidate;
+    const int8_t shift=2;
+    int i,j,x,y,counter,distance;
+    for(j=-2;j<=2;j+=4)
+    {
+        for(i=-1;i<=1;i+=2)
+        {
+            x=kingPosition.second+j;
+            y=kingPosition.first+i;
+            if(x>=0&&x<BOARDSIZE&&y>=0&&y<BOARDSIZE&&board[y][x]->getCode()==KNIGHT&&board[y][x]->isWhite()!=side)
+            {
+                return true;
+            }
+            x=kingPosition.second+i;
+            y=kingPosition.first+j;
+            if(x>=0&&x<BOARDSIZE&&y>=0&&y<BOARDSIZE&&board[y][x]->getCode()==KNIGHT&&board[y][x]->isWhite()!=side)
+            {
+                return true;
+            }
+        }           
+    }
+    for(counter=0;counter<8;++counter)
+    {
+        distance=0;
+        x=kingPosition.second;
+        y=kingPosition.first;
+        x+=rotationWheel[counter];
+        y+=rotationWheel[counter+shift];
+        while(x<BOARDSIZE&&y<BOARDSIZE&&x>=0&&y>=0)
+        {
+            candidate = board[y][x];
+            if(candidate->getCode()!=EMPTY&&candidate->getCode()!=KING)
+            {
+                if(candidate->isWhite()!=side)
+                {
+                    if(isDangerous(distance,kingPosition,rotationWheel[counter],rotationWheel[counter+shift],candidate))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            ++distance;
+            x+=rotationWheel[counter];
+            y+=rotationWheel[counter+shift];
+        }
     }
     return false;
 }

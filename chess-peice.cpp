@@ -683,7 +683,6 @@ ChessPeiceKing::ChessPeiceKing(int x, int y,bool color,Logger* log,ChessPieceBas
 std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
 {
     std::vector<std::pair<int, int>> out;
-    std::set<std::pair<int,int>> danger = ChessBoard::getDangerousPoints(board,white);
     int i,j;
     for(i=this->y-1;i<this->y+2;++i)
     {
@@ -691,7 +690,7 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
         {
             if(i>=0&&j>=0&&i<BOARDSIZE&&j<BOARDSIZE&&(i!=this->y||j!=this->x))
             {
-                if(board[i][j]->getCode()==EMPTY&&danger.find({i,j})==danger.end()&&kingNear(this->board,{i,j}))
+                if(board[i][j]->getCode()==EMPTY&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{i,j},this->board)&&kingNear(this->board,{i,j}))
                 {
                     out.push_back({i,j});
                 }
@@ -700,15 +699,15 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
     }
     if(moved==false)
     {
-        if(board[7*!white][0]->getCode()==ROOK&&board[7*!white][0]->isWhite()==white&&!board[7*!white][0]->hasMoved()&&board[7*!white][0]->canMoveTo({getY(),getX()-1})&&std::find(danger.begin(),danger.end(),std::pair<int,int>{getY(),getX()-2})==danger.end())
+        if(board[7*!white][0]->getCode()==ROOK&&board[7*!white][0]->isWhite()==white&&!board[7*!white][0]->hasMoved()&&board[7*!white][0]->canMoveTo({getY(),getX()-1})&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{this->y,this->x-2},this->board))
         {
             out.push_back({7*!white,0});
         }
-        if(board[7*!white][7]->getCode()==ROOK&&board[7*!white][7]->isWhite()==white&&!board[7*!white][7]->hasMoved()&&board[7*!white][7]->canMoveTo({getY(),getX()+1})&&std::find(danger.begin(),danger.end(),std::pair<int,int>{getY(),getX()+2})==danger.end())
+        if(board[7*!white][7]->getCode()==ROOK&&board[7*!white][7]->isWhite()==white&&!board[7*!white][7]->hasMoved()&&board[7*!white][7]->canMoveTo({getY(),getX()+1})&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{this->y,this->x+2},this->board))
         {
             out.push_back({7*!white,7});
         }
-        if(board[7*white][getX()]->getCode()==ROOK&&board[7*white][getX()]->isWhite()==white&&!board[7*white][getX()]->hasMoved()&&board[7*white][getX()]->canMoveTo({getY()+2*white-1,getX()})&&std::find(danger.begin(),danger.end(),std::pair<int,int>{getY()+4*white-2,getX()})==danger.end())
+        if(board[7*white][getX()]->getCode()==ROOK&&board[7*white][getX()]->isWhite()==white&&!board[7*white][getX()]->hasMoved()&&board[7*white][getX()]->canMoveTo({getY()+2*white-1,getX()})&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{this->y+4*white-2,this->x},this->board))
         {
             out.push_back({7*white,getX()});
         }
@@ -719,14 +718,6 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all)
 {
     std::vector<std::pair<int, int>> out;
     std::set<std::pair<int,int>> danger;
-    if(!all)
-    {
-        danger = ChessBoard::getDangerousPoints(board,white);
-    }
-    else
-    {
-        danger={};
-    }
     int i,j;
     for(i=this->y-1;i<this->y+2;++i)
     {
@@ -736,7 +727,7 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all)
             {
                 if(board[i][j]->getCode()!=EMPTY)
                 {
-                    if(danger.find({i,j})==danger.end()&&board[i][j]->isWhite()!=white)
+                    if(!ChessBoard::simplifiedEvaluateCheckMate(this->white,{i,j},this->board)&&board[i][j]->isWhite()!=white)
                         out.push_back({i,j});
                 }
                 else if(all)
@@ -746,6 +737,7 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all)
             }
         }
     }
+    
     return out;
 }
 

@@ -215,6 +215,10 @@ void IOhandler::move(const std::string& move)
     {
         try
         {
+            if(mv.start==mv.end)
+            {
+                throw std::logic_error("INVALID MOVE");
+            }
             checkMate = ChessBoard::evaluateCheckMate(this->side,ch->getBoard());
             id =ChessBoard::findFigureIndex(checkMate.restrictions,mv.start);
             if(id!=-1)
@@ -225,10 +229,10 @@ void IOhandler::move(const std::string& move)
             {
                isGood=std::find(checkMate.saveKingPath.begin(),checkMate.saveKingPath.end(),mv.end)!=checkMate.saveKingPath.end();
             }
-            if(isGood)
+            if(isGood||ch->getBoard()[mv.start.first][mv.start.second]->getCode()==KING)
                 ch->performMove(mv,ch->getBoard());
             else
-                throw std::logic_error("CANT MOVE THERE");
+                throw std::logic_error("CANT MOVE THERE, KING IS ATTACKED");
         }
         catch(std::exception& ex)
         {

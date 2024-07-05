@@ -59,6 +59,7 @@ public:
     static void printImaginaryBoard(ChessPieceBase*** board,std::ostream* out = &std::cout);
     static std::vector<std::pair<int,int>> filterMoves(const std::vector<std::pair<int,int>>& input,Special_Parameter checkMate,int usedIndex);
     static Special_Parameter evaluateCheckMate(bool side,ChessPieceBase*** board);
+    static bool simplifiedEvaluateCheckMate(bool side,std::pair<int,int> kingPosition,ChessPieceBase*** board);
     static std::pair<int,int> findKing(bool side, ChessPieceBase*** board);
     void printBoard(std::ostream* out = &std::cout);
     Move getBestMove(bool white);
