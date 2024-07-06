@@ -216,6 +216,7 @@ Move ChessBoard::getBestMove(bool white)
     int dScore;
     int maxScore;
     std::vector<std::thread> threads;
+    Thread_Parameter* param;
     std::vector<Thread_Parameter*> params;
     std::vector<Move_Candidate> out;
     std::map<float,std::pair<int,int>> scoreTable;
@@ -281,23 +282,52 @@ Move ChessBoard::getBestMove(bool white)
    // std::cout<<"SIZE: "<<out.size()<<std::endl;
     for(i=0;i<out.size();++i)
     {
-        revertBoard(imaginaryBoard,board);
-        performMove(out.at(i).move,imaginaryBoard,true);
-        if(i==0)
+        param = new Thread_Parameter;
+        if(param)
         {
-            maxScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty,1);
-            j=0;
+            param->board=copyBoard(board);
+            performMove(out.at(i).move,param->board,true);
+            param->difficulty=difficulty;
+            param->white=white;
+            param->ready=false;
         }
         else
         {
-            dScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty,1);
-            if(dScore>maxScore)
+            throw std::runtime_error("NOT ENOUGHT MEMORY");
+        }
+        params.push_back(param);
+        threads.push_back(std::thread{threadFunc,param});
+        threads.back().detach();
+    }
+    for(i=0;i<out.size();++i)
+    {
+        if(params[i]->ready)
+        {
+            if(i==0)
             {
-                j=i;
+                maxScore=out.at(i).dScore-params[i]->score;
+                j=0;
+            }
+            else
+            {
+                dScore=out.at(i).dScore-params[i]->score;
+                if(dScore>maxScore)
+                {
+                    j=i;
+                }
             }
         }
-
+        else
+        {
+            --i;
+        }
     }
+    for(i=0;i<out.size();++i)
+    {
+        delete params[i];        
+    }
+    params.clear();
+    threads.clear();
     deleteBoard(imaginaryBoard);
     try
     {
