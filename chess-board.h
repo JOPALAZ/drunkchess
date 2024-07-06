@@ -1,6 +1,8 @@
 #pragma once
 #include"chess-peice.h"
 #include <set>
+#include <future>
+#include <thread>
 #include <map>
 
 enum MovePrices
@@ -32,6 +34,16 @@ struct Special_Parameter
     std::vector<std::pair<int,int>> saveKingPath; 
     std::vector<Figure_Move_Restriction> restrictions;
 };
+struct Thread_Parameter
+{
+
+    ChessPieceBase*** board;
+    bool white;
+    int difficulty;
+    int depth;
+    bool ready;
+    int score;
+};
 
 
 class  ChessBoard
@@ -47,11 +59,12 @@ protected:
     ChessPieceBase*** board;
     int difficulty;
     static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth);
+    static void threadFunc(Thread_Parameter* param);
     static ChessPieceCode askReplacement();
 public:
     static int findFigureIndex(const std::vector<Figure_Move_Restriction> restrictions,std::pair<int,int> pos);
     static bool isDangerous(int distance,std::pair<int,int> kingPos,int8_t dX,int8_t dY, ChessPieceBase* suspect);
-    static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board);
+    static ChessPieceBase* createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board, bool moved_ = false);
     static void revertBoard(ChessPieceBase*** imgainaryBoard,ChessPieceBase*** board);
     static ChessPieceBase*** deleteBoard(ChessPieceBase*** board);
     static ChessPieceBase*** copyBoard(ChessPieceBase*** board, bool notImaginary = false);

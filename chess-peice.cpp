@@ -136,7 +136,7 @@ ChessPieceEmpty::~ChessPieceEmpty()
 
 
 
-ChessPiecePawn::ChessPiecePawn(int x, int y,bool color,Logger* log,ChessPieceBase*** board)
+ChessPiecePawn::ChessPiecePawn(int x, int y,bool color,Logger* log,ChessPieceBase*** board, bool moved_=false)
 {
     this->log=log;
     this->x=x;
@@ -145,6 +145,7 @@ ChessPiecePawn::ChessPiecePawn(int x, int y,bool color,Logger* log,ChessPieceBas
     this->board=board;
     this->white=color;
     this->playable=true;
+    this->moved=moved_;
     if(log)
     log->log("ГВИТНИК НАРОДИВСЯ!!!!!!!");
 }
@@ -155,7 +156,7 @@ std::vector<std::pair<int,int>> ChessPiecePawn::getMoveCandidates()
     int y_=y+delta;
     while(y_!=y+delta*(!moved+2))
     {
-        if(y_>=0&&y_<BOARDSIZE&&board[y_][x]->getCode()==EMPTY)
+        if(y_>=0&&y_<BOARDSIZE&&x>=0&&x<BOARDSIZE&&board[y_][x]->getCode()==EMPTY)
         {
             out.push_back({y_,x});
             y_+=delta;
@@ -188,7 +189,7 @@ std::vector<std::pair<int,int>> ChessPiecePawn::getAttackCandidates(bool all)
 }
 
 
-ChessPieceKnight::ChessPieceKnight(int x, int y,bool color,Logger* log,ChessPieceBase*** board)
+ChessPieceKnight::ChessPieceKnight(int x, int y,bool color,Logger* log,ChessPieceBase*** board, bool moved_=false)
 {
     this->log=log;
     this->x=x;
@@ -197,6 +198,7 @@ ChessPieceKnight::ChessPieceKnight(int x, int y,bool color,Logger* log,ChessPiec
     this->board=board;
     this->white=color;
     this->playable=true;
+    this->moved=moved_;
     if(log)
     log->log("КОНЬ ВЫСРАЛСЯ!!!");
 }
@@ -251,7 +253,7 @@ std::vector<std::pair<int,int>> ChessPieceKnight::getAttackCandidates(bool all)
     return out;    
 }
 
-ChessPieceRook::ChessPieceRook(int x, int y,bool color,Logger* log,ChessPieceBase*** board)
+ChessPieceRook::ChessPieceRook(int x, int y,bool color,Logger* log,ChessPieceBase*** board, bool moved_=false)
 {
     this->log=log;
     this->x=x;
@@ -260,6 +262,7 @@ ChessPieceRook::ChessPieceRook(int x, int y,bool color,Logger* log,ChessPieceBas
     this->board=board;
     this->white=color;
     this->playable=true;
+    this->moved=moved_;
 }
 std::vector<std::pair<int,int>> ChessPieceRook::getMoveCandidates()
 {
@@ -341,7 +344,7 @@ std::vector<std::pair<int,int>> ChessPieceRook::getAttackCandidates(bool all)
 }
 
 
-ChessPieceBishop::ChessPieceBishop(int x, int y,bool color,Logger* log,ChessPieceBase*** board)
+ChessPieceBishop::ChessPieceBishop(int x, int y,bool color,Logger* log,ChessPieceBase*** board, bool moved_=false)
 {
     this->log=log;
     this->x=x;
@@ -350,6 +353,7 @@ ChessPieceBishop::ChessPieceBishop(int x, int y,bool color,Logger* log,ChessPiec
     this->board=board;
     this->white=color;
     this->playable=true;
+    this->moved=moved_;
 }
 std::vector<std::pair<int,int>> ChessPieceBishop::getMoveCandidates()
 {
@@ -473,7 +477,7 @@ std::vector<std::pair<int,int>> ChessPieceBishop::getAttackCandidates(bool all)
 }
 
 
-ChessPieceQueen::ChessPieceQueen(int x, int y,bool color,Logger* log,ChessPieceBase*** board)
+ChessPieceQueen::ChessPieceQueen(int x, int y,bool color,Logger* log,ChessPieceBase*** board, bool moved_=false)
 {
     this->log=log;
     this->x=x;
@@ -482,6 +486,7 @@ ChessPieceQueen::ChessPieceQueen(int x, int y,bool color,Logger* log,ChessPieceB
     this->board=board;
     this->white=color;
     this->playable=true;
+    this->moved=moved_;
 }
 std::vector<std::pair<int,int>> ChessPieceQueen::getMoveCandidates()
 {
@@ -670,7 +675,7 @@ std::vector<std::pair<int,int>> ChessPieceQueen::getAttackCandidates(bool all)
     return out;
 }
 
-ChessPeiceKing::ChessPeiceKing(int x, int y,bool color,Logger* log,ChessPieceBase*** board)
+ChessPeiceKing::ChessPeiceKing(int x, int y,bool color,Logger* log,ChessPieceBase*** board, bool moved_=false)
 {
     this->log=log;
     this->x=x;
@@ -679,6 +684,8 @@ ChessPeiceKing::ChessPeiceKing(int x, int y,bool color,Logger* log,ChessPieceBas
     this->board=board;
     this->white=color;
     this->playable=true;
+    this->moved=moved_;
+
 }
 std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
 {

@@ -1,26 +1,28 @@
 #include"chess-board.h"
-static int debugCounter=0;
-ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board)
+//static int debugCounter=0;
+
+
+ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board,bool moved_=false)
 {
     switch (code)
     {
     case KING:
-        return new ChessPeiceKing(x,y,color,log,board);
+        return new ChessPeiceKing(x,y,color,log,board,moved_);
         break;
     case QUEEN:
-        return new ChessPieceQueen(x,y,color,log,board);
+        return new ChessPieceQueen(x,y,color,log,board,moved_);
         break;
     case BISHOP:
-        return new ChessPieceBishop(x,y,color,log,board);
+        return new ChessPieceBishop(x,y,color,log,board,moved_);
         break;
     case KNIGHT:
-        return new ChessPieceKnight(x,y,color,log,board);
+        return new ChessPieceKnight(x,y,color,log,board,moved_);
         break;
     case ROOK:
-        return new ChessPieceRook(x,y,color,log,board);
+        return new ChessPieceRook(x,y,color,log,board,moved_);
         break;
     case PAWN:
-        return new ChessPiecePawn(x,y,color,log,board);
+        return new ChessPiecePawn(x,y,color,log,board,moved_);
         break;
     case EMPTY:
         return new ChessPieceEmpty(x,y,log,board);
@@ -201,12 +203,20 @@ void ChessBoard::clear()
         board[i] = createEmptyRow(i);
     }
 }
-
+void ChessBoard::threadFunc(Thread_Parameter* param)
+{
+    param->score=recursiveSubroutine(param->board,!param->white,param->difficulty,1);
+    deleteBoard(param->board);
+    param->ready=true;
+}
+/**/
 Move ChessBoard::getBestMove(bool white)
 {
     int i,j,counter;
     int dScore;
     int maxScore;
+    std::vector<std::thread> threads;
+    std::vector<Thread_Parameter*> params;
     std::vector<Move_Candidate> out;
     std::map<float,std::pair<int,int>> scoreTable;
     ChessPieceBase*** imaginaryBoard = copyBoard(board);
@@ -268,7 +278,7 @@ Move ChessBoard::getBestMove(bool white)
     {
         throw std::runtime_error("NOT ENOUGHT MEMORY");
     }
-    std::cout<<"SIZE: "<<out.size()<<std::endl;
+   // std::cout<<"SIZE: "<<out.size()<<std::endl;
     for(i=0;i<out.size();++i)
     {
         revertBoard(imaginaryBoard,board);
@@ -352,17 +362,8 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
     std::vector<std::pair<int,int>> buf;
     Special_Parameter checkMate;
     int id;
-    if(depth==3)
-    {
-        debugCounter++;
-    }
     if(imaginaryBoard)
     {
-        if(debugCounter==1882)
-        {
-            std::cout<<"poslo"<<std::endl;
-            printImaginaryBoard(imaginaryBoard);
-        }
         checkMate = evaluateCheckMate(white,imaginaryBoard);
         for(i=0;i<BOARDSIZE;++i)
         {
@@ -471,9 +472,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
     {
         if(board[move.end.first][move.end.second]->getCode()==KING)
         {
-            std::cout<<std::endl<<std::endl;
-            printImaginaryBoard(board);
-            std::cout<<std::endl<<std::endl;
+            throw std::runtime_error("CANNOT ATTACK KING");
         }
         if(overrideRightess)
         {
@@ -678,7 +677,7 @@ ChessPieceBase*** ChessBoard::copyBoard(ChessPieceBase*** board, bool notImagina
                     if(board[i][j])
                     {
                         buf=nullptr;
-                        buf = ChessBoard::createPeice(board[i][j]->getX(),board[i][j]->getY(),board[i][j]->isWhite(),board[i][j]->getCode(),(Logger*)((size_t)(board[i][j]->getLogger())*notImaginary),out);
+                        buf = ChessBoard::createPeice(board[i][j]->getX(),board[i][j]->getY(),board[i][j]->isWhite(),board[i][j]->getCode(),(Logger*)((size_t)(board[i][j]->getLogger())*notImaginary),out,board[i][j]->hasMoved());
                         if(buf)
                         {
                             out[i][j]=buf;
@@ -715,7 +714,7 @@ void ChessBoard::revertBoard(ChessPieceBase*** imaginaryBoard,ChessPieceBase*** 
                     if(board[i][j])
                     {
                         buf=nullptr;
-                        buf = ChessBoard::createPeice(board[i][j]->getX(),board[i][j]->getY(),board[i][j]->isWhite(),board[i][j]->getCode(),nullptr,imaginaryBoard);
+                        buf = ChessBoard::createPeice(board[i][j]->getX(),board[i][j]->getY(),board[i][j]->isWhite(),board[i][j]->getCode(),nullptr,imaginaryBoard,board[i][j]->hasMoved());
                         if(buf)
                         {
                             delete imaginaryBoard[i][j];
@@ -795,9 +794,6 @@ std::pair<int,int> ChessBoard::findKing(bool side, ChessPieceBase*** board)
                 return {j,i};
         }
     }
-    std::cout<<std::endl<<"CRITICAL "<<debugCounter<<std::endl;
-    printImaginaryBoard(board);
-    std::cout<<std::endl<<std::endl;
     throw std::logic_error("NO KING WAS FOUND -> ???");
 }
 
@@ -809,8 +805,7 @@ bool ChessBoard::isDangerous(int distance,std::pair<int,int> kingPos,int8_t dX,i
     {
         if(code==PAWN)
         {
-            buf=suspect->getAttackCandidates(true);
-            return(std::find(buf.begin(),buf.end(),kingPos)!=buf.end());
+            return dX!=0&&dY==1-2*suspect->isWhite();
         }
     }
     if(dX!=0&&dY!=0)
