@@ -1,5 +1,5 @@
 #include"chess-board.h"
-//static int debugCounter=0;
+static int debugCounter=0;
 
 
 ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board,bool moved_=false)
@@ -502,7 +502,10 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
     {
         if(board[move.end.first][move.end.second]->getCode()==KING)
         {
+            printImaginaryBoard(board);
+            std::cout<<move.start.second<<"\t"<<move.start.first<<std::endl;
             throw std::runtime_error("CANNOT ATTACK KING");
+
         }
         if(overrideRightess)
         {
@@ -968,10 +971,12 @@ Special_Parameter ChessBoard::evaluateCheckMate(bool side,ChessPieceBase*** boar
                             }
                             out.kingAttacked=true;
                             out.saveKingPath=buf.unrestrictedPositions;
+                            break;
                         }
                         else
                         {
                             out.restrictions.push_back(buf);
+                            break;
                         }
                     }
                     else
