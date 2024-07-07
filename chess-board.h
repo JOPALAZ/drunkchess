@@ -4,6 +4,7 @@
 #include <future>
 #include <thread>
 #include <map>
+#include <sstream>
 
 enum MovePrices
 {
@@ -41,6 +42,7 @@ struct Thread_Parameter
     bool white;
     int difficulty;
     int depth;
+    int maxDepth;
     bool ready;
     int score;
 };
@@ -58,7 +60,8 @@ protected:
     Logger* log;
     ChessPieceBase*** board;
     int difficulty;
-    static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth);
+    int maxDepth=-1;
+    static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth,int maxDepth);
     static void threadFunc(Thread_Parameter* param);
     static ChessPieceCode askReplacement();
 public:
@@ -74,6 +77,8 @@ public:
     static Special_Parameter evaluateCheckMate(bool side,ChessPieceBase*** board);
     static bool simplifiedEvaluateCheckMate(bool side,std::pair<int,int> kingPosition,ChessPieceBase*** board);
     static std::pair<int,int> findKing(bool side, ChessPieceBase*** board);
+    static ChessPieceBase* createPeiceFromString(int x, int y,bool color, char code, Logger* log, ChessPieceBase*** board,bool moved_=false);
+    void makeBoardFromString(const std::string& str);
     void printBoard(std::ostream* out = &std::cout);
     Move getBestMove(bool white);
     ChessPieceBase*** getBoard() {return board;}

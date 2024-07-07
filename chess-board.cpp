@@ -32,6 +32,38 @@ ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode 
         break;
     }
 }
+
+ChessPieceBase* ChessBoard::createPeiceFromString(int x, int y,bool color, char code, Logger* log, ChessPieceBase*** board,bool moved_=false)
+{
+    switch (code)
+    {
+    case 'K':
+        return new ChessPeiceKing(x,y,color,log,board,moved_);
+        break;
+    case 'Q':
+        return new ChessPieceQueen(x,y,color,log,board,moved_);
+        break;
+    case 'B':
+        return new ChessPieceBishop(x,y,color,log,board,moved_);
+        break;
+    case 'H':
+        return new ChessPieceKnight(x,y,color,log,board,moved_);
+        break;
+    case 'R':
+        return new ChessPieceRook(x,y,color,log,board,moved_);
+        break;
+    case 'P':
+        return new ChessPiecePawn(x,y,color,log,board,moved_);
+        break;
+    case '0':
+        return new ChessPieceEmpty(x,y,log,board);
+        break;
+    default:
+        throw std::runtime_error("UNKNOWN OPTION");
+        break;
+    }
+}
+
 std::set<std::pair<int,int>> ChessBoard::getDangerousPoints(ChessPieceBase*** board, bool white)
 {
 
@@ -112,7 +144,7 @@ ChessBoard:: ChessBoard(Logger* log,int difficulty)
 :log(log),difficulty(difficulty)
 {
     int i;
-    board = new ChessPieceBase**[8];
+    board = new ChessPieceBase**[BOARDSIZE];
     for(i=0;i<2;i++)
     {
         board[7-i*7] = createFirstRow(i);
@@ -205,11 +237,47 @@ void ChessBoard::clear()
 }
 void ChessBoard::threadFunc(Thread_Parameter* param)
 {
-    param->score=recursiveSubroutine(param->board,!param->white,param->difficulty,1);
+    param->score=recursiveSubroutine(param->board,!param->white,param->difficulty,1,param->maxDepth);
     deleteBoard(param->board);
     param->ready=true;
 }
-/**/
+void ChessBoard::makeBoardFromString(const std::string& str)
+{
+    std::istringstream iss(str);
+    int counter=0;
+    int i,j;
+    std::string buf;
+    deleteBoard(this->board);
+    board = new ChessPieceBase**[BOARDSIZE];
+    if(!board)
+    {
+        throw std::runtime_error("NOT ENOUGHT MEMORY");
+    }
+    for(i=0;i<BOARDSIZE;++i)
+    {
+        board[i]=nullptr;
+        board[i]=new ChessPieceBase*[BOARDSIZE];
+        if(!board[i])
+        {
+            throw std::runtime_error("NOT ENOUGHT MEMORY");
+        }
+    }
+    i=0;
+    j=0;
+    while (iss>>buf&&counter!=64)
+    {
+        board[7-i][j]=createPeiceFromString(j,7-i,buf[0]=='W',buf[1],this->log,this->board);
+        j++;
+        if(j==BOARDSIZE)
+        {
+            ++i;
+            j=0;
+        }
+    }
+    
+
+
+}
 Move ChessBoard::getBestMove(bool white)
 {
     int i,j,counter;
@@ -287,7 +355,8 @@ Move ChessBoard::getBestMove(bool white)
         {
             param->board=copyBoard(board);
             performMove(out.at(i).move,param->board,true);
-            param->difficulty=difficulty;
+            param->difficulty=difficulty-1;
+            param->maxDepth=difficulty-1;
             param->white=white;
             param->ready=false;
         }
@@ -381,7 +450,7 @@ std::vector<std::pair<int,int>> ChessBoard::filterMoves(const std::vector<std::p
     }
     return out;
 }
-const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty, int depth)
+const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty, int depth,int maxDepth)
 {
     int i,j,counter;
     int dScore;
@@ -448,7 +517,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
         throw std::runtime_error("NOT ENOUGHT MEMORY");
     }
     //std::cout<<"SIZE: "<<out.size()<<std::endl;
-    if(depth==difficulty)
+    if(depth==maxDepth)
     {
         deleteBoard(imaginaryBoard);
         if(out.size()>=1)
@@ -468,11 +537,11 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
             performMove(out.at(i).move,imaginaryBoard,true);
             if(i==0)
             {
-                maxScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty,depth+1);
+                maxScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty-1,depth+1,maxDepth);
             }
             else
             {
-                dScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty,depth+1);
+                dScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty-1,depth+1,maxDepth);
                 if(dScore>maxScore)
                 {
                     maxScore=dScore;
