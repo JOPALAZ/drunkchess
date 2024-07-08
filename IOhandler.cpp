@@ -173,10 +173,61 @@ void IOhandler::processInput(const std::string& response)
             ch->printBoard(output);
         }
     }
+    else if(response=="prestart")
+    {
+        if(!server) 
+            *output<<"Chose a side [w/b]"<<std::flush;
+        std::getline(*input, response_);
+        toLowercase(response_);
+        if(response_[0]=='w')
+        {
+            side = true;
+            gameIsOn=startPreDefinedGame();
+        }
+        else if(response_[0]=='b')
+        {
+            side = false;
+            gameIsOn=startPreDefinedGame();
+        }
+        else
+        {
+            if(!server)
+                *output<<"Unknown input "<<std::flush;
+        }
+    }
     else
     {
         *output<<"Unknown input "<<std::flush;
     }
+}
+
+bool IOhandler::startPreDefinedGame()
+{
+    if(ch)
+    {
+        delete ch;
+        ch=nullptr;
+    }
+    std::string response_;
+    int difficulty;
+    if(!server)
+        *output<<"Chose a difficulty [1-5]"<<std::flush;
+    std::getline(*input, response_);
+    toLowercase(response_);
+    difficulty = std::stoi(response_);
+    if(difficulty>=1&&difficulty<=10)
+    {
+        ch = new ChessBoard(log,difficulty);
+        *output<<"Give board: "<<std::flush;
+        std::getline(*input, response_);
+        ch->makeBoardFromString(response_);
+        if(!this->side)
+        {
+            ch->performMove(ch->getBestMove(!this->side),ch->getBoard());
+        }
+        ch->printBoard(output);
+    }
+    return ch!=nullptr;
 }
 
 bool IOhandler::startGame()

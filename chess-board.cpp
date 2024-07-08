@@ -1,6 +1,18 @@
 #include"chess-board.h"
 static int debugCounter=0;
 
+std::vector<std::pair<int,int>> getOverlap(const std::vector<std::pair<int,int>>& el1,const std::vector<std::pair<int,int>>& el2)
+{
+    std::vector<std::pair<int,int>> out;
+    for(std::pair<int,int> pr : el1)
+    {
+        if(std::find(el2.begin(),el2.end(),pr)!=el2.end())
+        {
+            out.push_back(pr);
+        }
+    }
+    return out;
+}
 
 ChessPieceBase* ChessBoard::createPeice(int x, int y,bool color, ChessPieceCode code, Logger* log, ChessPieceBase*** board,bool moved_=false)
 {
@@ -367,6 +379,7 @@ Move ChessBoard::getBestMove(bool white)
         params.push_back(param);
         threads.push_back(std::thread{threadFunc,param});
         threads.back().detach();
+
     }
     for(i=0;i<out.size();++i)
     {
@@ -484,6 +497,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
                     {
                         revertBoard(imaginaryBoard,board);
                         dScore = performMove(Move{{i,j},el},imaginaryBoard,true);
+
                         if(out.size()==0)
                         {
                             out.push_back({Move{{i,j},el},dScore});
@@ -1028,18 +1042,19 @@ Special_Parameter ChessBoard::evaluateCheckMate(bool side,ChessPieceBase*** boar
             {
                 if(candidate->isWhite()!=side)
                 {
-                    obstacle=true;
                     if(isDangerous(distance,kingPosition,rotationWheel[counter],rotationWheel[counter+shift],candidate))
                     {
                         if(buf.position==std::pair{-1,-1})
                         {
-                            if(out.kingAttacked&&!obstacle)
-                            {
-                                printImaginaryBoard(board);
-                                throw std::logic_error("KING CANNOT BE ATTACKED FROM MORE THAN ONE SIDE");
-                            }
                             out.kingAttacked=true;
-                            out.saveKingPath=buf.unrestrictedPositions;
+                            if(out.kingAttacked)
+                            {
+                                out.saveKingPath=getOverlap(out.saveKingPath,buf.unrestrictedPositions);
+                            }
+                            else
+                            {
+                                out.saveKingPath=buf.unrestrictedPositions;
+                            }
                             break;
                         }
                         else

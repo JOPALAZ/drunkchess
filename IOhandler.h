@@ -16,7 +16,7 @@ private:
     bool server = false;
     bool side;
     bool startGame();
-
+    bool startPreDefinedGame();
     void move(const std::string& move);
     std::vector<std::string> getPossibleOptions();
     void processInput(const std::string& response);
