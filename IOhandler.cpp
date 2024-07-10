@@ -75,21 +75,52 @@ IOhandler::IOhandler(std::ostream* output,std::istream* input)
 void IOhandler::mainLoop()
 {
     loop=true;
+    bool ok = true;
     std::string response;
     while(loop)
     {
         try
         {
-            if(!server)
-                *output <<std::endl<<"~ (help for help): "<<std::flush;
+            response = server? "OK":"~ (help for help): ";
+            if(!server||ok)
+                *output<<response<<std::flush;
             std::getline(*input, response);
             toLowercase(response);
             processInput(response);
+            ok=true;
         }
         catch(std::out_of_range& range)
         {
             if(!server)
                 *output<<"YOUR COMMAND '"<<response<<"' WAS GIVEN WRONG: "<<range.what()<<std::flush;
+            else
+            {
+                *output<<"NOT OK"<<std::flush;
+                std::cerr<<range.what()<<std::endl;
+            }
+            ok=false;
+        }
+        catch(std::invalid_argument& arg)
+        {
+            if(!server)
+                *output<<"YOUR COMMAND '"<<response<<"' WAS GIVEN WRONG: "<<arg.what()<<std::flush;
+            else
+            {
+                *output<<"NOT OK"<<std::flush;
+                std::cerr<<arg.what()<<std::endl;
+            }
+            ok=false;
+        }
+        catch(std::logic_error& logic)
+        {
+            if(!server)
+                *output<<"YOUR COMMAND '"<<response<<"' WAS GIVEN WRONG: "<<logic.what()<<std::flush;
+            else
+            {
+                *output<<"NOT OK"<<std::flush;
+                std::cerr<<logic.what()<<std::endl;
+            }
+            ok=false;
         }
         catch (std::exception& ex)
         {
@@ -122,18 +153,22 @@ void IOhandler::processInput(const std::string& response)
     {
         for(const std::string& el : getPossibleOptions())
         {
-            if(!server)
-                *output<<el<<std::endl;
+            *output<<el<<std::endl;
         }
     }
     else if(response=="exit")
     {
         loop=false;
+        if(ch)
+        {
+            delete ch;
+            ch=nullptr;
+        }
     }
     else if(!gameIsOn&&response=="start")
     {
-        if(!server) 
-            *output<<"Chose a side [w/b]"<<std::flush;
+        response_ = server? "OK":"Chose a side [w/b]";
+        *output<<response_<<std::flush;
         std::getline(*input, response_);
         toLowercase(response_);
         if(response_[0]=='w')
@@ -152,9 +187,13 @@ void IOhandler::processInput(const std::string& response)
                 *output<<"Unknown input "<<std::flush;
         }
     }
-    else if(gameIsOn&&response.substr(0,4)=="move")
+    else if(gameIsOn&&response.size()==10&&response.substr(0,4)=="move")
     {
         move(response.substr(5,10));
+    }
+    else if(gameIsOn&&response.size()==8&&response.substr(0,5)=="moves")
+    {
+        printMoveCandidates(response.substr(6,8));
     }
     else if(gameIsOn&&response=="surrender")
     {
@@ -163,7 +202,7 @@ void IOhandler::processInput(const std::string& response)
             delete ch;
             ch=nullptr;
         }
-        *output<<"You lost!!! "<<std::flush;
+        *output<<"You lost!!!"<<std::flush;
         gameIsOn=false;
     }
     else if(gameIsOn&&response=="print")
@@ -197,7 +236,7 @@ void IOhandler::processInput(const std::string& response)
     }
     else
     {
-        *output<<"Unknown input "<<std::flush;
+        throw std::invalid_argument("Unknown input ");
     }
 }
 
@@ -237,21 +276,23 @@ bool IOhandler::startGame()
         delete ch;
         ch=nullptr;
     }
-    std::string response_;
+    std::string response_= server? "OK":"Chose a difficulty [1-5]";
     int difficulty;
-    if(!server)
-        *output<<"Chose a difficulty [1-5]"<<std::flush;
+    *output<<response_<<std::flush;
     std::getline(*input, response_);
     toLowercase(response_);
     difficulty = std::stoi(response_);
     if(difficulty>=1&&difficulty<=10)
     {
         ch = new ChessBoard(log,difficulty);
-        if(!this->side)
+        if(ch)
         {
-            ch->performMove(ch->getBestMove(!this->side),ch->getBoard());
+            if(!this->side)
+            {
+                ch->performMove(ch->getBestMove(!this->side),ch->getBoard());
+            }
+            ch->printBoard(output);
         }
-        ch->printBoard(output);
     }
     return ch!=nullptr;
 }
@@ -259,43 +300,35 @@ void IOhandler::move(const std::string& move)
 {
     Move mv = {{move[1]-48,move[0]-48},{move[4]-48,move[3]-48}};
     Move bestMove;
-    Special_Parameter checkMate;
+    checkMate = {false,{},{}};
     bool isGood = true;
     int id;
     if (ch->getBoard()[mv.start.first][mv.start.second]->isWhite()==this->side&&ch->getBoard()[mv.start.first][mv.start.second]->getCode()!=EMPTY)
     {
-        try
+        if(mv.start==mv.end)
         {
-            if(mv.start==mv.end)
-            {
-                throw std::logic_error("INVALID MOVE");
-            }
-            checkMate = ChessBoard::evaluateCheckMate(this->side,ch->getBoard());
-            id =ChessBoard::findFigureIndex(checkMate.restrictions,mv.start);
-            if(id!=-1)
-            {
-               isGood=std::find(checkMate.restrictions.at(id).unrestrictedPositions.begin(),checkMate.restrictions.at(id).unrestrictedPositions.end(),mv.end)!=checkMate.restrictions.at(id).unrestrictedPositions.end();
-            }
-            if(checkMate.kingAttacked&&isGood)
-            {
-               isGood=std::find(checkMate.saveKingPath.begin(),checkMate.saveKingPath.end(),mv.end)!=checkMate.saveKingPath.end();
-            }
-            if(isGood||ch->getBoard()[mv.start.first][mv.start.second]->getCode()==KING)
-                ch->performMove(mv,ch->getBoard());
-            else
-                throw std::logic_error("CANT MOVE THERE, KING IS ATTACKED");
+            throw std::logic_error("INVALID MOVE");
         }
-        catch(std::exception& ex)
+        checkMate = ChessBoard::evaluateCheckMate(this->side,ch->getBoard());
+        id =ChessBoard::findFigureIndex(checkMate.restrictions,mv.start);
+        if(id!=-1)
         {
-            *output<<ex.what()<<std::endl;
-            return;
+            isGood=std::find(checkMate.restrictions.at(id).unrestrictedPositions.begin(),checkMate.restrictions.at(id).unrestrictedPositions.end(),mv.end)!=checkMate.restrictions.at(id).unrestrictedPositions.end();
         }
+        if(checkMate.kingAttacked&&isGood)
+        {
+            isGood=std::find(checkMate.saveKingPath.begin(),checkMate.saveKingPath.end(),mv.end)!=checkMate.saveKingPath.end();
+        }
+        if(isGood||ch->getBoard()[mv.start.first][mv.start.second]->getCode()==KING)
+            ch->performMove(mv,ch->getBoard());
+        else
+            throw std::logic_error("CANT MOVE THERE, KING IS ATTACKED");
         try
         {
             bestMove = ch->getBestMove(!this->side);
             if(bestMove.start.first==-1)
             {
-                *output<<"YOU WON!!!"<<std::endl;
+                *output<<"YOU WON!!!"<<std::flush;
                 if(ch)
                 {
                     delete ch;
@@ -308,11 +341,11 @@ void IOhandler::move(const std::string& move)
             id=patOrMate(side,ch->getBoard());
             if(id==-1)
             {
-                *output<<"YOU LOST!!!"<<std::endl;
+                *output<<"YOU LOST!!!"<<std::flush;
             }
             else if(id==0)
             {
-                *output<<"TIE!!!"<<std::endl;
+                *output<<"TIE!!!"<<std::flush;
             }
             ch->printBoard(output);
             if(id!=1)
@@ -327,10 +360,10 @@ void IOhandler::move(const std::string& move)
             }
 
         }
-        catch(std::exception& ex)
+        catch(...)
         {
-            *output<<"ENEMY: "<<ex.what()<<std::endl;
-            *output<<"YOU WON!!!"<<std::endl;
+            *output<<"ENEMY DECIDED TO SURRENDER"<<std::endl;
+            *output<<"YOU WON!!!"<<std::flush;
             if(ch)
             {
                 delete ch;
@@ -343,10 +376,52 @@ void IOhandler::move(const std::string& move)
     }
     else
     {
-        *output<<"YOU CAN'T MOVE THAT FIGURE"<<std::flush;
+        throw std::logic_error("YOU CAN'T MOVE THAT FIGURE");
     }
     
 }
+void IOhandler::printMoveCandidates(std::string start)
+{
+    std::vector<std::pair<int,int>> buf = ch&&ch->getBoard()[start[1]-48][start[0]-48]->isWhite()==side? getMoveCandidates({start[0]-48,start[1]-48}):std::vector<std::pair<int,int>>{};
+    int counter=0;
+    if(buf.empty())
+    {
+        *output<<"NONE"<<std::endl;
+    }
+    else
+    {
+        for(std::pair<int,int> el : buf)
+        {
+            ++counter;
+            *output<<el.first<<el.second;
+            if(counter!=buf.size())
+            {
+                *output<<',';
+            }
+        }
+        *output<<std::endl;
+    }
+}
+std::vector<std::pair<int,int>> IOhandler::getMoveCandidates(std::pair<int,int> start)
+{
+    std::vector<std::pair<int,int>> out;
+    int id = ChessBoard::findFigureIndex(checkMate.restrictions,start);
+    out=ch->getBoard()[start.second][start.first]->getAttackCandidates(false);
+    for(std::pair<int,int> el : ch->getBoard()[start.second][start.first]->getMoveCandidates())
+    {
+        out.push_back(el);
+    }
+    if(checkMate.kingAttacked)
+    {
+        out = ChessBoard::getOverlap(out,checkMate.saveKingPath);
+    }
+    if(id!=-1)
+    {
+        out = ChessBoard::getOverlap(out,checkMate.restrictions.at(id).unrestrictedPositions);
+    }
+    return out;
+}
+
 IOhandler::IOhandler()
 :output(&std::cout),input(&std::cin)
 {

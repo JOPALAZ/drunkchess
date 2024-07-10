@@ -1,7 +1,7 @@
 #include"chess-board.h"
 static int debugCounter=0;
 
-std::vector<std::pair<int,int>> getOverlap(const std::vector<std::pair<int,int>>& el1,const std::vector<std::pair<int,int>>& el2)
+std::vector<std::pair<int,int>> ChessBoard::getOverlap(const std::vector<std::pair<int,int>>& el1,const std::vector<std::pair<int,int>>& el2)
 {
     std::vector<std::pair<int,int>> out;
     for(std::pair<int,int> pr : el1)

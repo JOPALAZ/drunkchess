@@ -11,6 +11,7 @@ private:
     ChessBoard* ch=nullptr;
     std::ostream* output;
     std::istream* input;
+    Special_Parameter checkMate={false,{},{}};
     bool gameIsOn=false;
     bool loop = true;
     bool server = false;
@@ -20,6 +21,8 @@ private:
     void move(const std::string& move);
     std::vector<std::string> getPossibleOptions();
     void processInput(const std::string& response);
+    std::vector<std::pair<int,int>> getMoveCandidates(std::pair<int,int> start);
+    void printMoveCandidates(std::string start);
 public:
     static void toLowercase(std::string& str);
     void mainLoop();

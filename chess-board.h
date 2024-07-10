@@ -78,6 +78,7 @@ public:
     static bool simplifiedEvaluateCheckMate(bool side,std::pair<int,int> kingPosition,ChessPieceBase*** board);
     static std::pair<int,int> findKing(bool side, ChessPieceBase*** board);
     static ChessPieceBase* createPeiceFromString(int x, int y,bool color, char code, Logger* log, ChessPieceBase*** board,bool moved_=false);
+    static std::vector<std::pair<int,int>> getOverlap(const std::vector<std::pair<int,int>>& el1,const std::vector<std::pair<int,int>>& el2);
     void makeBoardFromString(const std::string& str);
     void printBoard(std::ostream* out = &std::cout);
     Move getBestMove(bool white);
