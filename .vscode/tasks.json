@@ -10,7 +10,7 @@
                 "*.cpp",
                 "-fpermissive",
                 "-o",
-                "${fileDirname}/chess"
+                "${fileDirname}/../bin/chess"
             ],
             "options": {
                 "cwd": "${fileDirname}"
