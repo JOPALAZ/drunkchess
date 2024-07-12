@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+{% load extra static %}
+<html>
+<head>
+    <title>Drunk Chess Board</title>
+    <style>
+        .chess-board {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            gap: 1px;
+        }
+        .chess-board div {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .chess-board div img {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .circle {
+            height: 100%;
+            width: 100%; 
+            background-color: #555;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 0; 
+        }
+        .white {
+            background-color:hsl(160, 50%, 80%);
+        }
+        .black {
+            background-color: hsl(160, 50%, 40%);
+        }
+        .options {
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        const clientId = "{{ client_id }}";
+        selectedFigure = false;
+        startpos=[-1,-1];
+        localStorage.setItem('client_id', clientId);
+        console.log("Client ID saved in LocalStorage:", clientId);
+        function cellClicked(col, row) {
+            if(selectedFigure==true)
+            {
+                fetch(`/move/${startpos[0]}/${startpos[1]}/${col}/${row}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    if (data.status === 'success') {
+                        updateBoard(data.setup_data);
+                        if(data.special_condition!=="OK"&&data.special_condition!=="NOT OK")
+                        {
+                            alert(data.special_condition);
+                        }
+                    }
+                    removeCircles();
+                    startpos=[-1,-1];
+                    selectedFigure=false;
+                });
+            }
+            else
+            {
+                
+                    fetch(`/cell-clicked-first/${col}/${row}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    startpos=[col,row];
+                    selectedFigure=true;
+                    removeCircles();
+                    fillCirles(data.candidates);
+                });
+                
+            }
+
+        }
+        function fillCirles(points)
+        {
+            points.forEach(piece=>
+            {
+                if(piece!="NONE")
+                {
+                    const cell = document.getElementById(`cell-${piece[1]}-${piece[0]}`);    
+                    const circle = document.createElement('div');
+                    circle.className='circle';
+                    cell.appendChild(circle);
+                }
+                else
+                {
+                    startpos=[-1,-1];
+                    selectedFigure=false;
+                }
+                
+            }
+        )
+        }
+        function removeCircles() {
+            const circles = document.querySelectorAll('.chess-board .circle');
+            circles.forEach(circle => {
+                circle.remove();
+            });
+        }
+        function startGame() {
+            const difficulty = document.getElementById('difficulty').value;
+            const side = document.getElementById('side').value;
+            console.log(clientId)
+            fetch(`/start-game/${difficulty}/${side}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Client-ID': clientId,
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.status === 'success') {
+                    updateBoard(data.setup_data);
+                }
+                else
+                {
+                    removeCircles();
+                    startpos=[-1,-1];
+                    selectedFigure = false;
+                }
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        function updateBoard(setupData) {
+            const cells = document.querySelectorAll('.chess-board div');
+            cells.forEach(cell => {
+                cell.innerHTML = '';
+            });
+
+            setupData.forEach((piece, index) => {
+                const row = 7 - Math.floor(index / 8);
+                const col = index % 8;
+                const cell = document.getElementById(`cell-${row}-${col}`);
+                if (piece.code !== '0') {
+                    const img = document.createElement('img');
+                    img.src = `{% static 'images/' %}${piece.color.toLowerCase()}_${piece.code.toLowerCase()}.png`;
+                    img.alt = piece.code;
+                    cell.appendChild(img);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="chess-board">
+        {% for row in board_colors reversed %}
+            {% for col in row %}
+                <div id="cell-{{ 7|subtract:forloop.parentloop.counter0 }}-{{ forloop.counter0 }}"
+                class="{{ col }}"
+                onclick="cellClicked({{ forloop.counter0 }}, {{ 7|subtract:forloop.parentloop.counter0 }} )">
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <div class="options">
+        <label for="difficulty">Difficulty:</label>
+        <input type="number" id="difficulty" name="difficulty" min="1" max="7" value="5">
+        <br>
+        <label for="side">Side:</label>
+        <select id="side" name="side">
+            <option value="white">White</option>
+            <option value="black">Black</option>
+        </select>
+        <br>
+        <button onclick="startGame()">Начать игру</button>
+    </div>
+</body>
+</html>

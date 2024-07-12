@@ -1,0 +1,1 @@
+from drunkchess.templatetags import extra

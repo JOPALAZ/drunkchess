@@ -23,6 +23,8 @@ private:
     void processInput(const std::string& response);
     std::vector<std::pair<int,int>> getMoveCandidates(std::pair<int,int> start);
     void printMoveCandidates(std::string start);
+    void printBoard();
+    std::pair<int,int> transcodePosition(std::string str);
 public:
     static void toLowercase(std::string& str);
     void mainLoop();

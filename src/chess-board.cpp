@@ -219,17 +219,21 @@ void ChessBoard::printImaginaryBoard(ChessPieceBase*** board,std::ostream* out =
         *out<<std::endl;
     }
 }
-void ChessBoard::printBoard(std::ostream* out = &std::cout)
+void ChessBoard::printBoard(bool white,std::ostream* out = &std::cout,bool server = false)
 {
     int i,j;
-    for(i=7; i>=0; --i)
+    for(i=white? 7:0; i>=0&&i<BOARDSIZE; i+=white? -1:1)
     {
-        for(j=0; j<8; j++)
+        for(j=white? 0:7; j>=0&&j<BOARDSIZE; j+=white? 1:-1)
         {
             *out<<board[i][j]->print()<<' ';
         }
-        *out<<std::endl;
+        if(!server)
+            *out<<std::endl;
     }
+    if(server)
+        *out<<std::endl;
+
 }
 void ChessBoard::clear()
 {
@@ -360,7 +364,7 @@ Move ChessBoard::getBestMove(bool white)
         throw std::runtime_error("NOT ENOUGHT MEMORY");
     }
    // std::cout<<"SIZE: "<<out.size()<<std::endl;
-    for(i=0;i<out.size();++i)
+    for(i=0;i<out.size()&&difficulty>1;++i)
     {
         param = new Thread_Parameter;
         if(param)
@@ -381,7 +385,7 @@ Move ChessBoard::getBestMove(bool white)
         threads.back().detach();
 
     }
-    for(i=0;i<out.size();++i)
+    for(i=0;i<out.size()&&difficulty>1;++i)
     {
         if(params[i]->ready)
         {
@@ -404,12 +408,16 @@ Move ChessBoard::getBestMove(bool white)
             --i;
         }
     }
-    for(i=0;i<out.size();++i)
+    for(i=0;i<out.size()&&difficulty>1;++i)
     {
         delete params[i];        
     }
     params.clear();
     threads.clear();
+    if(difficulty<=1)
+    {
+        j=0;
+    }
     deleteBoard(imaginaryBoard);
     try
     {
@@ -583,7 +591,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
     ChessPieceCode code;
     if(board!=nullptr)
     {
-        if(board[move.end.first][move.end.second]->getCode()==KING)
+        if(board[move.end.first][move.end.second]->getCode()==KING&&board[move.start.first][move.start.second]->isWhite()!=board[move.end.first][move.end.second]->isWhite())
         {
             printImaginaryBoard(board);
             std::cout<<move.start.second<<"\t"<<move.start.first<<std::endl;
@@ -612,7 +620,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
                     {
@@ -634,7 +642,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     board[move.start.first][move.start.second] = buf;
                     for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()/2.f;
+                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     } 
                     return score;
                 }
@@ -644,11 +652,11 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     if(move.end.second==0)
                     {
@@ -669,11 +677,11 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     performMove({move.start,bufMoveKing},board,true);
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveKing.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()/2.f;
+                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveRook.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()/2.f;
+                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     score+=Castling;
                     return score;
@@ -703,7 +711,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     } 
                     if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
                     {
@@ -725,7 +733,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     board[move.start.first][move.start.second] = buf;
                     for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()/2.f;
+                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     } 
                     return score;
                 }
@@ -735,11 +743,11 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()/2.f;
+                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     if(move.end.second==0)
                     {
@@ -760,11 +768,11 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
                     performMove({move.start,bufMoveKing},board,true);
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveKing.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()/2.f;
+                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveRook.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()/2.f;
+                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
                     }
                     score+=Castling;
                     return score;
@@ -1047,7 +1055,7 @@ Special_Parameter ChessBoard::evaluateCheckMate(bool side,ChessPieceBase*** boar
                         if(buf.position==std::pair{-1,-1})
                         {
                             out.kingAttacked=true;
-                            if(out.kingAttacked)
+                            if(!out.saveKingPath.empty())
                             {
                                 out.saveKingPath=getOverlap(out.saveKingPath,buf.unrestrictedPositions);
                             }

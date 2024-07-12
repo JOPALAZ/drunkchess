@@ -13,6 +13,7 @@ enum MovePrices
     FirstMove = 1,
     Castling = 50
 };
+const float ATTACK_COST=0.05;
 struct Move
 {
     std::pair<int,int> start;
@@ -80,7 +81,7 @@ public:
     static ChessPieceBase* createPeiceFromString(int x, int y,bool color, char code, Logger* log, ChessPieceBase*** board,bool moved_=false);
     static std::vector<std::pair<int,int>> getOverlap(const std::vector<std::pair<int,int>>& el1,const std::vector<std::pair<int,int>>& el2);
     void makeBoardFromString(const std::string& str);
-    void printBoard(std::ostream* out = &std::cout);
+    void printBoard(bool white, std::ostream* out = &std::cout, bool server=false);
     Move getBestMove(bool white);
     ChessPieceBase*** getBoard() {return board;}
     void debugPrintDanger();

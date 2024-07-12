@@ -7,16 +7,16 @@ ChessPieceCode ChessPieceBase::getCode()
 }
 //todo peredelat vezde attack candidates potomu 4to esli ya natikajus' na empty to ja dolzhen delat 4ek jesli je to vrag, i jesli net to sri sebe v rot.
 // mojno o4en mnoho sokratit', sdelaj canmove i canattack metodami classa base i realizuj kak v queen ili bishop
-static bool kingNear(ChessPieceBase*** board, std::pair<int,int> pos)
+bool kingNear(ChessPieceBase*** board, std::pair<int,int> pos,bool white)
 {
     int i,j;
     for(i=pos.first-1;i<pos.first+2;++i)
     {
         for(j=pos.second-1;j<pos.second+2;++j)
         {
-            if(i>=0&&j>=0&&i<BOARDSIZE&&j<BOARDSIZE&&(i!=pos.first||j!=pos.second))
+            if(i>=0&&j>=0&&i<BOARDSIZE&&j<BOARDSIZE)
             {
-                if(board[i][j]->getCode()==KING)
+                if(board[i][j]->getCode()==KING&&board[i][j]->isWhite()!=white)
                 {
                     return true;
                 }
@@ -697,7 +697,7 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
         {
             if(i>=0&&j>=0&&i<BOARDSIZE&&j<BOARDSIZE&&(i!=this->y||j!=this->x))
             {
-                if(board[i][j]->getCode()==EMPTY&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{i,j},this->board)&&kingNear(this->board,{i,j}))
+                if(board[i][j]->getCode()==EMPTY&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{i,j},this->board)&&!kingNear(this->board,{i,j},white))
                 {
                     out.push_back({i,j});
                 }
@@ -734,10 +734,10 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all)
             {
                 if(board[i][j]->getCode()!=EMPTY)
                 {
-                    if(!ChessBoard::simplifiedEvaluateCheckMate(this->white,{i,j},this->board)&&board[i][j]->isWhite()!=white)
+                    if(!ChessBoard::simplifiedEvaluateCheckMate(this->white,{i,j},this->board)&&board[i][j]->isWhite()!=white&&!kingNear(this->board,{i,j},white))
                         out.push_back({i,j});
                 }
-                else if(all)
+                else if(all&&!kingNear(this->board,{i,j},white))
                 {
                     out.push_back({i,j});
                 }
