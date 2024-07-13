@@ -14,6 +14,7 @@ enum MovePrices
     Castling = 50
 };
 const float ATTACK_COST=0.05;
+const float worth=0.9;
 struct Move
 {
     std::pair<int,int> start;
@@ -23,7 +24,7 @@ struct Move
 struct Move_Candidate
 {
     Move move;
-    int dScore;
+    float dScore;
 };
 struct Figure_Move_Restriction
 {
@@ -45,7 +46,7 @@ struct Thread_Parameter
     int depth;
     int maxDepth;
     bool ready;
-    int score;
+    float score;
 };
 
 
@@ -61,8 +62,8 @@ protected:
     Logger* log;
     ChessPieceBase*** board;
     int difficulty;
-    int maxDepth=-1;
-    static const int recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth,int maxDepth);
+    int maxDepth;
+    static const float recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty,int depth,int maxDepth,float worth);
     static void threadFunc(Thread_Parameter* param);
     static ChessPieceCode askReplacement();
 public:

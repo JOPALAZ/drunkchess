@@ -1,7 +1,14 @@
 #pragma once
 enum ChessPieceCode
 {
-    KING=500,QUEEN=300,BISHOP=200,KNIGHT=150,ROOK=100,PAWN=25,EMPTY=2,NONE=-1
+    KING=1100,
+    QUEEN=900,
+    ROOK=500,
+    BISHOP=330,
+    KNIGHT=320,
+    PAWN=100,
+    EMPTY=0,
+    NONE=-1
 };
 
 

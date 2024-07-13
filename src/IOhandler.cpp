@@ -294,13 +294,13 @@ bool IOhandler::startGame()
         delete ch;
         ch=nullptr;
     }
-    std::string response_= server? "OK":"Chose a difficulty [1-5]";
+    std::string response_= server? "OK":"Chose a difficulty [1-10 (more is not recomended)]";
     int difficulty;
     *output<<response_<<std::endl;
     std::getline(*input, response_);
     toLowercase(response_);
     difficulty = std::stoi(response_);
-    if(difficulty>=1&&difficulty<=10)
+    if(difficulty>=1)
     {
         ch = new ChessBoard(log,difficulty);
         if(ch)

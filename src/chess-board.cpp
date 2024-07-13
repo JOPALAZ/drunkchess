@@ -253,7 +253,7 @@ void ChessBoard::clear()
 }
 void ChessBoard::threadFunc(Thread_Parameter* param)
 {
-    param->score=recursiveSubroutine(param->board,!param->white,param->difficulty,1,param->maxDepth);
+    param->score=worth*recursiveSubroutine(param->board,!param->white,param->difficulty,1,param->maxDepth,worth*worth);
     deleteBoard(param->board);
     param->ready=true;
 }
@@ -297,8 +297,9 @@ void ChessBoard::makeBoardFromString(const std::string& str)
 Move ChessBoard::getBestMove(bool white)
 {
     int i,j,counter;
-    int dScore;
-    int maxScore;
+    float dScore;
+    float maxScore;
+    maxDepth=difficulty/2;
     std::vector<std::thread> threads;
     Thread_Parameter* param;
     std::vector<Thread_Parameter*> params;
@@ -351,6 +352,7 @@ Move ChessBoard::getBestMove(bool white)
                                 else if(counter==out.size()-1&&out.at(counter).dScore>=dScore&&out.size()<difficulty)
                                 {
                                     out.push_back({Move{{i,j},el},dScore});
+                                    break;
                                 }
                             }
                         }
@@ -364,15 +366,16 @@ Move ChessBoard::getBestMove(bool white)
         throw std::runtime_error("NOT ENOUGHT MEMORY");
     }
    // std::cout<<"SIZE: "<<out.size()<<std::endl;
-    for(i=0;i<out.size()&&difficulty>1;++i)
+    for(i=0;i<out.size()&&maxDepth>0;++i)
     {
         param = new Thread_Parameter;
         if(param)
         {
             param->board=copyBoard(board);
+            param->score=out.at(i).dScore;
             performMove(out.at(i).move,param->board,true);
-            param->difficulty=difficulty-1;
-            param->maxDepth=difficulty-1;
+            param->difficulty=difficulty;
+            param->maxDepth=maxDepth;
             param->white=white;
             param->ready=false;
         }
@@ -385,10 +388,11 @@ Move ChessBoard::getBestMove(bool white)
         threads.back().detach();
 
     }
-    for(i=0;i<out.size()&&difficulty>1;++i)
+    for(i=0;i<out.size()&&maxDepth>0;++i)
     {
         if(params[i]->ready)
         {
+            //std::cout<<out.at(i).dScore<<" - "<<params[i]->score<<'('<<out.at(i).dScore-params[i]->score<<')'<<" PTS FROM "<<out.at(i).move.start.second<<out.at(i).move.start.first<<" to "<<out.at(i).move.end.second<<out.at(i).move.end.first<<std::endl;
             if(i==0)
             {
                 maxScore=out.at(i).dScore-params[i]->score;
@@ -399,6 +403,7 @@ Move ChessBoard::getBestMove(bool white)
                 dScore=out.at(i).dScore-params[i]->score;
                 if(dScore>maxScore)
                 {
+                    maxScore=dScore;
                     j=i;
                 }
             }
@@ -408,13 +413,14 @@ Move ChessBoard::getBestMove(bool white)
             --i;
         }
     }
-    for(i=0;i<out.size()&&difficulty>1;++i)
+    //std::cout<<j<<std::endl<<std::endl;
+    for(i=0;i<out.size()&&maxDepth>0;++i)
     {
         delete params[i];        
     }
     params.clear();
     threads.clear();
-    if(difficulty<=1)
+    if(maxDepth<=0)
     {
         j=0;
     }
@@ -471,11 +477,11 @@ std::vector<std::pair<int,int>> ChessBoard::filterMoves(const std::vector<std::p
     }
     return out;
 }
-const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty, int depth,int maxDepth)
+const float ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, int difficulty, int depth,int maxDepth,float worth)
 {
     int i,j,counter;
-    int dScore;
-    int maxScore;
+    float dScore;
+    float maxScore;
     std::vector<Move_Candidate> out;
     std::map<float,std::pair<int,int>> scoreTable;
     ChessPieceBase*** imaginaryBoard = copyBoard(board);
@@ -526,6 +532,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
                                 else if(counter==out.size()-1&&out.at(counter).dScore>=dScore&&out.size()<difficulty)
                                 {
                                     out.push_back({Move{{i,j},el},dScore});
+                                    break;
                                 }
                             }
                         }
@@ -559,11 +566,11 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
             performMove(out.at(i).move,imaginaryBoard,true);
             if(i==0)
             {
-                maxScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty-1,depth+1,maxDepth);
+                maxScore=out.at(i).dScore-worth*recursiveSubroutine(imaginaryBoard,!white,difficulty-1,depth+1,maxDepth,worth*worth);
             }
             else
             {
-                dScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty-1,depth+1,maxDepth);
+                dScore=out.at(i).dScore-recursiveSubroutine(imaginaryBoard,!white,difficulty-1,depth+1,maxDepth,worth*worth);
                 if(dScore>maxScore)
                 {
                     maxScore=dScore;
@@ -582,7 +589,7 @@ const int ChessBoard::recursiveSubroutine(ChessPieceBase*** board, bool white, i
         return maxScore;
     }
 }
-float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool overrideRightess=false)
+float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool overrideRightess=false)
 {
     ChessPieceBase* buf;
     float score;
@@ -593,8 +600,8 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
     {
         if(board[move.end.first][move.end.second]->getCode()==KING&&board[move.start.first][move.start.second]->isWhite()!=board[move.end.first][move.end.second]->isWhite())
         {
-            printImaginaryBoard(board);
-            std::cout<<move.start.second<<"\t"<<move.start.first<<std::endl;
+            //printImaginaryBoard(board);
+            //std::cout<<move.start.second<<"\t"<<move.start.first<<std::endl;
             throw std::runtime_error("CANNOT ATTACK KING");
 
         }
@@ -783,6 +790,7 @@ float ChessBoard::performMove(const Move& move,ChessPieceBase*** board,bool over
     }
     throw std::logic_error("CAN'T MOVE");
 }
+
 
 ChessPieceBase*** ChessBoard::copyBoard(ChessPieceBase*** board, bool notImaginary = false)
 {

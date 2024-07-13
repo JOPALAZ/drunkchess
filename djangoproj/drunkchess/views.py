@@ -35,6 +35,7 @@ def move(request,startX,startY,endX,endY):
     if(response!="OK"):
         setupData=read_last_output(cserver)
         setupData=parseSetupData(setupData)
+        clients[id].started=False
     else:
         setupData=getSetupData(cserver)
     print(setupData)

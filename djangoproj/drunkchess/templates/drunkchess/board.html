@@ -48,6 +48,7 @@
         const clientId = "{{ client_id }}";
         selectedFigure = false;
         startpos=[-1,-1];
+        gameIsOn=false
         localStorage.setItem('client_id', clientId);
         console.log("Client ID saved in LocalStorage:", clientId);
         function cellClicked(col, row) {
@@ -64,6 +65,9 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log(data);
+                    removeCircles();
+                    startpos=[-1,-1];
+                    selectedFigure=false;
                     if (data.status === 'success') {
                         updateBoard(data.setup_data);
                         if(data.special_condition!=="OK"&&data.special_condition!=="NOT OK")
@@ -71,9 +75,6 @@
                             alert(data.special_condition);
                         }
                     }
-                    removeCircles();
-                    startpos=[-1,-1];
-                    selectedFigure=false;
                 });
             }
             else
