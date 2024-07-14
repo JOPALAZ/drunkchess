@@ -4,15 +4,85 @@
 <head>
     <title>Drunk Chess Board</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #2c3e50, #bdc3c7);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+        header {
+            background: #1abc9c;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .header-buttons button {
+            background: white;
+            color: #1abc9c;
+            border: 1px solid #1abc9c;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s;
+        }
+        .header-buttons button:hover {
+            background: #1abc9c;
+            color: white;
+        }
+        .content {
+            display: flex;
+            flex-direction: row;
+            padding: 20px;
+            gap: 20px;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+        }
         .chess-board {
             display: grid;
-            grid-template-columns: repeat(8, 50px);
-            grid-template-rows: repeat(8, 50px);
-            gap: 1px;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 70vmin;
+            height: 70vmin;
         }
         .chess-board div {
-            width: 50px;
-            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -28,103 +98,210 @@
         }
         .circle {
             height: 100%;
-            width: 100%; 
+            width: 100%;
             background-color: #555;
             border-radius: 50%;
             position: absolute;
-            z-index: 0; 
+            z-index: 0;
         }
         .white {
-            background-color:hsl(160, 50%, 80%);
+            background-color: hsl(160, 50%, 80%);
         }
         .black {
             background-color: hsl(160, 50%, 40%);
         }
         .options {
-            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .options label {
+            font-weight: bold;
+            color: #333;
+        }
+        .options input, .options select {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .options button {
+            background: #1abc9c;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .options button:hover {
+            background: #16a085;
+        }
+        .theme-toggle-button {
+            background: #1abc9c;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        .theme-toggle-button:hover {
+            background: #16a085;
+        }
+
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+            max-width: 500px;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .dark-theme {
+            background: #333;
+            color: #ccc;
+        }
+        .dark-theme header {
+            background: #444;
+            color: #ccc;
+        }
+        .dark-theme .modal-content
+        {
+            background: #555;
+        }
+        .dark-theme .container  {
+            background: #555;
+        }
+        .dark-theme .header-buttons button {
+            background: #555;
+            color: #ccc;
+            border: 1px solid #777;
+        }
+        .dark-theme .header-buttons button:hover {
+            background: #666;
+            color: white;
+        }
+        .dark-theme .options label {
+            color: #ccc;
+        }
+        .dark-theme .options input,
+        .dark-theme .options select {
+            background: #666;
+            color: #ccc;
+            border: 1px solid #777;
+        }
+        .dark-theme .options button,
+        .dark-theme .theme-toggle-button {
+            background: #888;
+            color: white;
+        }
+        .dark-theme .options button:hover,
+        .dark-theme .theme-toggle-button:hover {
+            background: #999;
         }
     </style>
     <script>
         const clientId = "{{ client_id }}";
-        selectedFigure = false;
-        startpos=[-1,-1];
-        gameIsOn=false
+        let selectedFigure = false;
+        let startpos = [-1, -1];
+        let gameIsOn = false;
         localStorage.setItem('client_id', clientId);
         console.log("Client ID saved in LocalStorage:", clientId);
-        function cellClicked(col, row) {
-            if(selectedFigure==true)
-            {
-                fetch(`/move/${startpos[0]}/${startpos[1]}/${col}/${row}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Client-ID': clientId,
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data);
-                    removeCircles();
-                    startpos=[-1,-1];
-                    selectedFigure=false;
-                    if (data.status === 'success') {
-                        updateBoard(data.setup_data);
-                        if(data.special_condition!=="OK"&&data.special_condition!=="NOT OK")
-                        {
-                            alert(data.special_condition);
-                        }
-                    }
-                });
-            }
-            else
-            {
-                
-                    fetch(`/cell-clicked-first/${col}/${row}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Client-ID': clientId,
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    startpos=[col,row];
-                    selectedFigure=true;
-                    removeCircles();
-                    fillCirles(data.candidates);
-                });
-                
-            }
 
-        }
-        function fillCirles(points)
-        {
-            points.forEach(piece=>
-            {
-                if(piece!="NONE")
-                {
-                    const cell = document.getElementById(`cell-${piece[1]}-${piece[0]}`);    
-                    const circle = document.createElement('div');
-                    circle.className='circle';
-                    cell.appendChild(circle);
+        function cellClicked(col, row) {
+            if(gameIsOn){
+                if (selectedFigure) {
+                    fetch(`/move/${startpos[0]}/${startpos[1]}/${col}/${row}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Client-ID': clientId,
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data);
+                        removeCircles();
+                        startpos = [-1, -1];
+                        selectedFigure = false;
+                        if (data.status === 'success') {
+                            updateBoard(data.setup_data);
+                            if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
+                                alert(data.special_condition);
+                                gameIsOn = false
+                            }
+                        }
+                    });
+                } else {
+                    fetch(`/cell-clicked-first/${col}/${row}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Client-ID': clientId,
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        startpos = [col, row];
+                        selectedFigure = true;
+                        removeCircles();
+                        fillCirles(data.candidates);
+                    });
                 }
-                else
-                {
-                    startpos=[-1,-1];
-                    selectedFigure=false;
-                }
-                
             }
-        )
         }
+
+        function fillCirles(points) {
+            points.forEach(piece => {
+                if (piece !== "NONE") {
+                    const cell = document.getElementById(`cell-${piece[1]}-${piece[0]}`);
+                    const circle = document.createElement('div');
+                    circle.className = 'circle';
+                    cell.appendChild(circle);
+                } else {
+                    startpos = [-1, -1];
+                    selectedFigure = false;
+                }
+            });
+        }
+
         function removeCircles() {
             const circles = document.querySelectorAll('.chess-board .circle');
             circles.forEach(circle => {
                 circle.remove();
             });
         }
+
         function startGame() {
             const difficulty = document.getElementById('difficulty').value;
             const side = document.getElementById('side').value;
@@ -142,11 +319,10 @@
                 console.log(data);
                 if (data.status === 'success') {
                     updateBoard(data.setup_data);
-                }
-                else
-                {
+                    gameIsOn = true;
+                } else {
                     removeCircles();
-                    startpos=[-1,-1];
+                    startpos = [-1, -1];
                     selectedFigure = false;
                 }
             });
@@ -166,6 +342,7 @@
             }
             return cookieValue;
         }
+
         function updateBoard(setupData) {
             const cells = document.querySelectorAll('.chess-board div');
             cells.forEach(cell => {
@@ -184,31 +361,108 @@
                 }
             });
         }
+
+        function showSettings() {
+            document.getElementById('settingsModal').style.display = "block";
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = "none";
+        }
+
+        function saveSettings() {
+            const piecePrices = {
+                pawn: parseFloat(document.getElementById('pricePawn').value),
+                knight: parseFloat(document.getElementById('priceKnight').value),
+                bishop: parseFloat(document.getElementById('priceBishop').value),
+                rook: parseFloat(document.getElementById('priceRook').value),
+                queen: parseFloat(document.getElementById('priceQueen').value),
+                king: parseFloat(document.getElementById('priceKing').value),
+            };
+            const firstMovePrice = parseFloat(document.getElementById('priceFirstMove').value);
+            const castlingPrice = parseFloat(document.getElementById('priceCastling').value);
+            const attackCost = parseFloat(document.getElementById('attackCost').value);
+            const worth = parseFloat(document.getElementById('worth').value);
+
+            // Store settings in local storage or send to the server
+            localStorage.setItem('piecePrices', JSON.stringify(piecePrices));
+            localStorage.setItem('firstMovePrice', firstMovePrice);
+            localStorage.setItem('castlingPrice', castlingPrice);
+            localStorage.setItem('attackCost', attackCost);
+            localStorage.setItem('worth', worth);
+
+            closeSettings();
+        }
+
+        function toggleDarkTheme() {
+            document.body.classList.toggle('dark-theme');
+        }
     </script>
 </head>
 <body>
-    <div class="chess-board">
-        {% for row in board_colors reversed %}
-            {% for col in row %}
-                <div id="cell-{{ 7|subtract:forloop.parentloop.counter0 }}-{{ forloop.counter0 }}"
-                class="{{ col }}"
-                onclick="cellClicked({{ forloop.counter0 }}, {{ 7|subtract:forloop.parentloop.counter0 }} )">
-                </div>
-            {% endfor %}
-        {% endfor %}
+    <div class="container">
+        <header>
+            <h1>Drunk Chess Board</h1>
+            <div class="header-buttons">
+                <button onclick="startGame()">Start Game</button>
+                <button onclick="showSettings()">Settings</button>
+                <button onclick="toggleDarkTheme()">Toggle Dark Theme</button>
+                <button>Help</button>
+            </div>
+        </header>
+        <div class="content">
+            <div class="chess-board">
+                {% for row in board_colors reversed %}
+                    {% for col in row %}
+                        <div id="cell-{{ 7|subtract:forloop.parentloop.counter0 }}-{{ forloop.counter0 }}"
+                            class="{{ col }}"
+                            onclick="cellClicked({{ forloop.counter0 }}, {{ 7|subtract:forloop.parentloop.counter0 }} )">
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            <div class="options">
+                <label for="difficulty">Difficulty:</label>
+                <input type="number" id="difficulty" name="difficulty" min="1" max="7" value="5">
+                <label for="side">Side:</label>
+                <select id="side" name="side">
+                    <option value="white">White</option>
+                    <option value="black">Black</option>
+                </select>
+                <button onclick="startGame()">Start</button>
+            </div>
+        </div>
     </div>
 
-    <div class="options">
-        <label for="difficulty">Difficulty:</label>
-        <input type="number" id="difficulty" name="difficulty" min="1" max="7" value="5">
-        <br>
-        <label for="side">Side:</label>
-        <select id="side" name="side">
-            <option value="white">White</option>
-            <option value="black">Black</option>
-        </select>
-        <br>
-        <button onclick="startGame()">Начать игру</button>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettings()">&times;</span>
+            <h2>Settings</h2>
+            <div class="options">
+                <label for="pricePawn">Price of Pawn:</label>
+                <input type="number" id="pricePawn" min="0" step="0.01">
+                <label for="priceKnight">Price of Knight:</label>
+                <input type="number" id="priceKnight" min="0" step="0.01">
+                <label for="priceBishop">Price of Bishop:</label>
+                <input type="number" id="priceBishop" min="0" step="0.01">
+                <label for="priceRook">Price of Rook:</label>
+                <input type="number" id="priceRook" min="0" step="0.01">
+                <label for="priceQueen">Price of Queen:</label>
+                <input type="number" id="priceQueen" min="0" step="0.01">
+                <label for="priceKing">Price of King:</label>
+                <input type="number" id="priceKing" min="0" step="0.01">
+                <label for="priceFirstMove">Price of First Move:</label>
+                <input type="number" id="priceFirstMove" min="0" step="0.01">
+                <label for="priceCastling">Price of Castling:</label>
+                <input type="number" id="priceCastling" min="0" step="0.01">
+                <label for="attackCost">Attack Cost Coefficient:</label>
+                <input type="number" id="attackCost" min="0" max="2" step="0.01">
+                <label for="worth">Worth Coefficient:</label>
+                <input type="number" id="worth" min="0" max="2" step="0.01">
+                <button onclick="saveSettings()">Save</button>
+            </div>
+        </div>
     </div>
 </body>
 </html>

@@ -42,17 +42,12 @@ def move(request,startX,startY,endX,endY):
     return JsonResponse({'status': 'success', 'setup_data': setupData, 'special_condition': response})
     
 def read_last_output(cserver,timeout=1.0):
-    start_time = time.time()
-    while cserver:
-        output = cserver.stdout.readline().strip()
-        if output:
-            if(output=='NOT OK'):
-                print(f"EXCEPTION : {cserver.stderr.readline().strip()}")
-            print(output)
-            return output
-        elif time.time() - start_time > timeout:
-            print("Timeout reached")
-            break
+    output = cserver.stdout.readline().strip()
+    if output:
+        if(output=='NOT OK'):
+            print(f"EXCEPTION : {cserver.stderr.readline().strip()}")
+        print(output)
+        return output
     return None
 
 def sendStopGame(id):
