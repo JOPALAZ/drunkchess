@@ -152,26 +152,30 @@
         }
 
         .modal {
-            display: none; 
+            display: none;
             position: fixed;
-            z-index: 1;
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            overflow: auto; 
-            background-color: rgb(0,0,0); 
-            background-color: rgba(0,0,0,0.4); 
-            padding-top: 60px;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
         }
+
         .modal-content {
             background-color: #fefefe;
-            margin: 5% auto; 
+            margin: 0% auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 80%; 
+            width: 80%;
             max-width: 500px;
             border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
         .close {
             color: #aaa;
@@ -233,11 +237,20 @@
         let selectedFigure = false;
         let startpos = [-1, -1];
         let gameIsOn = false;
-        localStorage.setItem('client_id', clientId);
+         localStorage.setItem('client_id', clientId);
         console.log("Client ID saved in LocalStorage:", clientId);
+        let lock=false;
+        function showMessage(message) {
+            document.getElementById('messageText').innerText = message;
+            document.getElementById('messageModal').style.display = 'flex';
+        }
 
+        function closeMessage() {
+            document.getElementById('messageModal').style.display = 'none';
+        }
         function cellClicked(col, row) {
-            if(gameIsOn){
+            if(gameIsOn&&!lock){
+                lock=true
                 if (selectedFigure) {
                     fetch(`/move/${startpos[0]}/${startpos[1]}/${col}/${row}/`, {
                         method: 'POST',
@@ -253,12 +266,17 @@
                         removeCircles();
                         startpos = [-1, -1];
                         selectedFigure = false;
+                        lock=false
                         if (data.status === 'success') {
                             updateBoard(data.setup_data);
                             if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
-                                alert(data.special_condition);
+                                showMessage(data.special_condition);
                                 gameIsOn = false
                             }
+                        }
+                        else
+                        {
+                           console.log(data.what);
                         }
                     });
                 } else {
@@ -272,6 +290,7 @@
                     })
                     .then(response => response.json())
                     .then(data => {
+                        lock=false
                         startpos = [col, row];
                         selectedFigure = true;
                         removeCircles();
@@ -300,6 +319,17 @@
             circles.forEach(circle => {
                 circle.remove();
             });
+        }
+
+        function resetIdle() {
+            fetch(`/reset-idle/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Client-ID': clientId,
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
         }
 
         function startGame() {
@@ -372,31 +402,61 @@
 
         function saveSettings() {
             const piecePrices = {
-                pawn: parseFloat(document.getElementById('pricePawn').value),
-                knight: parseFloat(document.getElementById('priceKnight').value),
-                bishop: parseFloat(document.getElementById('priceBishop').value),
-                rook: parseFloat(document.getElementById('priceRook').value),
-                queen: parseFloat(document.getElementById('priceQueen').value),
-                king: parseFloat(document.getElementById('priceKing').value),
+                empty: parseInt(document.getElementById('priceEmpty').value),
+                pawn: parseInt(document.getElementById('pricePawn').value),
+                knight: parseInt(document.getElementById('priceKnight').value),
+                bishop: parseInt(document.getElementById('priceBishop').value),
+                rook: parseInt(document.getElementById('priceRook').value),
+                queen: parseInt(document.getElementById('priceQueen').value),
+                king: parseInt(document.getElementById('priceKing').value),
             };
-            const firstMovePrice = parseFloat(document.getElementById('priceFirstMove').value);
-            const castlingPrice = parseFloat(document.getElementById('priceCastling').value);
+            const priceMate = parseInt(document.getElementById('priceMate').value);
+            const pricePate = parseInt(document.getElementById('pricePate').value);
+            const firstMovePrice = parseInt(document.getElementById('priceFirstMove').value);
+            const castlingPrice = parseInt(document.getElementById('priceCastling').value);
             const attackCost = parseFloat(document.getElementById('attackCost').value);
             const worth = parseFloat(document.getElementById('worth').value);
+            const headers = new Headers({
+                'KING': piecePrices.king,
+                'QUEEN': piecePrices.queen,
+                'ROOK': piecePrices.rook,
+                'BISHOP': piecePrices.bishop,
+                'KNIGHT': piecePrices.knight,
+                'PAWN': piecePrices.pawn,
+                'EMPTY': piecePrices.empty,
+                'MATE': priceMate,
+                'PATE': pricePate,
+                'FMOVE': firstMovePrice,
+                'CAST': castlingPrice,
+                'ATTACK': attackCost,
+                'WORTH': worth,
+                'Content-Type': 'application/json',
+                'X-Client-ID': clientId,
+                'X-CSRFToken': getCookie('csrftoken'),
+            });
 
-            // Store settings in local storage or send to the server
-            localStorage.setItem('piecePrices', JSON.stringify(piecePrices));
-            localStorage.setItem('firstMovePrice', firstMovePrice);
-            localStorage.setItem('castlingPrice', castlingPrice);
-            localStorage.setItem('attackCost', attackCost);
-            localStorage.setItem('worth', worth);
-
+            // Send the settings to the server
+            fetch('/set-params/', {
+                method: 'POST',
+                headers: headers
+            })
             closeSettings();
         }
 
         function toggleDarkTheme() {
             document.body.classList.toggle('dark-theme');
         }
+        setInterval(resetIdle, 300000);
+        window.onbeforeunload = function() {
+            fetch(`/stop/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Client-ID': clientId,
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+        };
     </script>
 </head>
 <body>
@@ -423,7 +483,7 @@
             </div>
             <div class="options">
                 <label for="difficulty">Difficulty:</label>
-                <input type="number" id="difficulty" name="difficulty" min="1" max="7" value="5">
+                <input type="number" id="difficulty" name="difficulty" min="1" max="10" value="5">
                 <label for="side">Side:</label>
                 <select id="side" name="side">
                     <option value="white">White</option>
@@ -440,28 +500,40 @@
             <span class="close" onclick="closeSettings()">&times;</span>
             <h2>Settings</h2>
             <div class="options">
+                <label for="priceEmpty">Price of Empty Cell:</label>
+                <input type="number" id="priceEmpty" min="0" step="1" max="2147483646"max="2147483646" value="0">
                 <label for="pricePawn">Price of Pawn:</label>
-                <input type="number" id="pricePawn" min="0" step="0.01">
+                <input type="number" id="pricePawn" min="0" step="1" max="2147483646"value="100">
                 <label for="priceKnight">Price of Knight:</label>
-                <input type="number" id="priceKnight" min="0" step="0.01">
+                <input type="number" id="priceKnight" min="0" step="1" max="2147483646"value="320">
                 <label for="priceBishop">Price of Bishop:</label>
-                <input type="number" id="priceBishop" min="0" step="0.01">
+                <input type="number" id="priceBishop" min="0" step="1" max="2147483646"value="330">
                 <label for="priceRook">Price of Rook:</label>
-                <input type="number" id="priceRook" min="0" step="0.01">
+                <input type="number" id="priceRook" min="0" step="1" max="2147483646"value="500">
                 <label for="priceQueen">Price of Queen:</label>
-                <input type="number" id="priceQueen" min="0" step="0.01">
+                <input type="number" id="priceQueen" min="0" step="1" max="2147483646"value="900">
                 <label for="priceKing">Price of King:</label>
-                <input type="number" id="priceKing" min="0" step="0.01">
-                <label for="priceFirstMove">Price of First Move:</label>
-                <input type="number" id="priceFirstMove" min="0" step="0.01">
+                <input type="number" id="priceKing" min="0" step="1" max="2147483646"value="1100">
+                <label for="priceMate">Price of Mate:</label>
+                <input type="number" id="priceMate" min="0" step="1" max="2147483646"value="-999999">
+                <label for="pricePate">Price of Pate:</label>
+                <input type="number" id="pricePate" min="0" step="1" max="2147483646"value="0">
                 <label for="priceCastling">Price of Castling:</label>
-                <input type="number" id="priceCastling" min="0" step="0.01">
+                <input type="number" id="priceCastling" min="0" step="1" max="2147483646"value="50">
+                <label for="priceFirstMove">Price of First Move:</label>
+                <input type="number" id="priceFirstMove" min="0" step="1" max="2147483646"value="1">
                 <label for="attackCost">Attack Cost Coefficient:</label>
-                <input type="number" id="attackCost" min="0" max="2" step="0.01">
+                <input type="number" id="attackCost" min="0" max="2" step="0.005" value="0.05">
                 <label for="worth">Worth Coefficient:</label>
-                <input type="number" id="worth" min="0" max="2" step="0.01">
+                <input type="number" id="worth" min="0" max="2" step="0.005" value="0.9">
                 <button onclick="saveSettings()">Save</button>
             </div>
+        </div>
+    </div>
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMessage()">&times;</span>
+            <p id="messageText"></p>
         </div>
     </div>
 </body>

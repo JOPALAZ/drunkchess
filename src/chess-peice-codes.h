@@ -1,15 +1,24 @@
 #pragma once
+#include <stdexcept>
+
 enum ChessPieceCode
 {
-    KING=1100,
-    QUEEN=900,
-    ROOK=500,
-    BISHOP=330,
-    KNIGHT=320,
-    PAWN=100,
-    EMPTY=0,
-    NONE=-1
+    KING,
+    QUEEN,
+    ROOK,
+    BISHOP,
+    KNIGHT,
+    PAWN,
+    EMPTY,
+    NONE,
 };
 
+extern int prices[8];
+extern int Mate;
+extern int Pate;
+extern int FirstMove;
+extern int Castling;
+extern float ATTACK_COST;
+extern float worth;
 
-                            
+int getScore(ChessPieceCode code);

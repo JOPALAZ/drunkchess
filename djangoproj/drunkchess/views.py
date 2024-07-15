@@ -14,12 +14,25 @@ class clientData:
         self.started=started
         self.lastactive=lastactive
 
+def set_params(request):
+    id=request.headers['X-Client-id']
+    params=["KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN", "EMPTY","MATE","PATE","FMOVE","CAST","ATTACK","WORTH"]
+    sendCommandToServer(cserver=clients[id].cserver,command="set params")
+    print(read_last_output(clients[id].cserver))
+    for i in params:
+        sendCommandToServer(clients[id].cserver,request.headers[i])
+        response = read_last_output(clients[id].cserver)
+        if(response!="OK"):
+            return JsonResponse({'status': 'error'}, status=400)
+    return JsonResponse({'status': 'success'})
+
+
 def check_client_activity():
     while True:
         now = timezone.now()
         for client_id, clientData in list(clients.items()):
             if (now - clientData.lastactive).total_seconds() > SESSION_COOKIE_AGE:
-                print(f"Client {client_id} has been inactive for too long.")
+                #print(f"Client {client_id} has been inactive for too long.")
                 clients[client_id].cserver.kill()
                 del clients[client_id] 
         time.sleep(60)  
@@ -30,23 +43,26 @@ def move(request,startX,startY,endX,endY):
     cserver=clients[id].cserver
     sendCommandToServer(cserver,f"move {startX}{startY}:{endX}{endY}")
     response = read_last_output(cserver)
-    if(response=='NOT OK'):
-        return JsonResponse({'status': 'error'}, status=400)
+    if(str(response).split('|')[0]=='NOT OK'):
+        return JsonResponse({'status': 'error', 'what': response.split('|')[1]}, status=400)
     if(response!="OK"):
         setupData=read_last_output(cserver)
         setupData=parseSetupData(setupData)
+        read_last_output(cserver)
         clients[id].started=False
     else:
         setupData=getSetupData(cserver)
-    print(setupData)
+    #print(setupData)
     return JsonResponse({'status': 'success', 'setup_data': setupData, 'special_condition': response})
     
-def read_last_output(cserver,timeout=1.0):
+def read_last_output(cserver):
     output = cserver.stdout.readline().strip()
     if output:
         if(output=='NOT OK'):
-            print(f"EXCEPTION : {cserver.stderr.readline().strip()}")
-        print(output)
+            err = cserver.stderr.readline().strip()
+            print(f"EXCEPTION : {err}")
+            return output + '|' + err
+        #print(output)
         return output
     return None
 
@@ -61,7 +77,7 @@ def sendStopGame(id):
     clients[id].started = False
 
 def sendCommandToServer(cserver,command):
-    print(f"COMMAND: {command} SENT:")
+    #print(f"COMMAND: {command} SENT:")
     if cserver:
         cserver.stdin.write(f'{command}\n')
         cserver.stdin.flush()
@@ -120,19 +136,35 @@ def cell_clicked_first(request, col, row):
     if request.method == 'POST':
         id=request.headers['X-Client-id']
         if(clients[id].started==True):
-            print(f'moves {col}{row}')
+            #print(f'moves {col}{row}')
             sendCommandToServer(clients[id].cserver,f'moves {col}{row}')
             candidates = read_last_output(clients[id].cserver).split(',')
-            print(candidates)
+            #print(candidates)
             read_last_output(clients[id].cserver)
         return JsonResponse({'status': 'success','candidates':candidates})
+    return JsonResponse({'status': 'error'}, status=400)
+def reset_idle(request):
+    id = request.headers['X-Client-id']
+    #print(id + ' ACTIVE')
+    if(clients.__contains__(id)):
+        clients[id].lastactive=timezone.now()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)
+def stop_client(request):
+    id = request.headers['X-Client-id']
+    #print(id + ' ACTIVE')
+    if(clients.__contains__(id)):
+        #print(f"Client {id} left.")
+        clients[id].cserver.kill()
+        del clients[id] 
+        return JsonResponse({'status': 'success'})
     return JsonResponse({'status': 'error'}, status=400)
 
 async def start_game(request, difficulty, side):
     global clients
     id = request.headers.get('X-Client-id')
     data = clients[id]
-    print(data.started)
+    #print(data.started)
     clients[id].started 
     if request.method == 'POST':
         if clients[id].started:
@@ -146,7 +178,7 @@ async def start_game(request, difficulty, side):
         clients[id].started = True
 
         setup_data = getSetupData(data.cserver)
-        print(setup_data)
+        #print(setup_data)
         return JsonResponse({'status': 'success', 'difficulty': difficulty, 'side': side, 'setup_data': setup_data})
     
     return JsonResponse({'status': 'error'}, status=400)

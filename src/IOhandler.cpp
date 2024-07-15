@@ -1,5 +1,5 @@
 #include"IOhandler.h"
-
+#include"chess-peice-codes.h"
 int patOrMate(bool side,ChessPieceBase*** board,Special_Parameter& checkMate)
 {
     int i,j,id;
@@ -204,6 +204,7 @@ void IOhandler::processInput(const std::string& response)
             ch=nullptr;
         }
         *output<<"You lost!!!"<<std::endl;
+        checkMate={false,{},{}};
         gameIsOn=false;
     }
     else if(response=="prestart")
@@ -228,6 +229,10 @@ void IOhandler::processInput(const std::string& response)
                 *output<<"Unknown input "<<std::endl;
         }
     }
+    else if(response=="set params")
+    {
+        setParams();
+    }
     else if(gameIsOn&&response=="print")
     {
         printBoard();
@@ -245,6 +250,7 @@ bool IOhandler::startPreDefinedGame()
         delete ch;
         ch=nullptr;
     }
+    checkMate={false,{},{}};
     std::string response_;
     int difficulty;
     if(!server)
@@ -294,6 +300,7 @@ bool IOhandler::startGame()
         delete ch;
         ch=nullptr;
     }
+    checkMate={false,{},{}};
     std::string response_= server? "OK":"Chose a difficulty [1-10 (more is not recomended)]";
     int difficulty;
     *output<<response_<<std::endl;
@@ -314,6 +321,65 @@ bool IOhandler::startGame()
         }
     }
     return ch!=nullptr;
+}
+void IOhandler::setParams()
+{
+    std::string response;
+    std::string figureNames[] = {"KING", "QUEEN", "ROOK", "BISHOP", "KNIGHT", "PAWN", "EMPTY"};
+    int i;
+    if(server)
+        *output<<"OK"<<std::endl;
+    try
+    {
+        for(i=0;i<7;++i)
+        {
+            if(!server)
+                *output<<"Price for "+figureNames[i]<<std::endl;
+            std::getline(*input,response);
+            prices[i] = std::stoi(response);
+            if(server)
+                *output<<"OK"<<std::endl;
+        }
+        if(!server)
+            *output<<"Price for Mate"<<std::endl;
+        std::getline(*input,response);
+        Mate = std::stoi(response);
+        if(server)
+            *output<<"OK"<<std::endl;
+        else
+            *output<<"Price for Pate"<<std::endl;
+        std::getline(*input,response);
+        Pate = std::stoi(response);
+        if(server)
+            *output<<"OK"<<std::endl;
+        else
+            *output<<"Price for First Move"<<std::endl;
+        std::getline(*input,response);
+        FirstMove = std::stoi(response);
+        if(server)
+            *output<<"OK"<<std::endl;
+        else
+            *output<<"Price for Castling"<<std::endl;
+        std::getline(*input,response);
+        Castling = std::stoi(response);
+        if(server)
+            *output<<"OK"<<std::endl;
+        else
+            *output<<"Price for Attack Cost"<<std::endl;
+        std::getline(*input,response);
+        ATTACK_COST = std::stof(response);
+        if(server)
+            *output<<"OK"<<std::endl;
+        else
+            *output<<"Price for Worth of predictions"<<std::endl;
+        std::getline(*input,response);
+        worth = std::stof(response);
+        
+    }
+    catch(...)
+    {
+        std::cerr<<"INVALID VALUE";
+    }
 }
 void IOhandler::move(const std::string& move)
 {
@@ -353,6 +419,7 @@ void IOhandler::move(const std::string& move)
                     delete ch;
                     ch=nullptr;
                 }
+                checkMate={false,{},{}};
                 gameIsOn=false;
                 return;
             }
@@ -376,6 +443,7 @@ void IOhandler::move(const std::string& move)
                     delete ch;
                     ch=nullptr;
                 }
+                checkMate={false,{},{}};
                 gameIsOn=false;
                 return;
             }
@@ -383,6 +451,7 @@ void IOhandler::move(const std::string& move)
         }
         catch(...)
         {
+            
             *output<<"ENEMY DECIDED TO SURRENDER -> YOU WON!!!"<<std::endl;
             printBoard();
             if(ch)
@@ -390,6 +459,7 @@ void IOhandler::move(const std::string& move)
                 delete ch;
                 ch=nullptr;
             }
+            checkMate={false,{},{}};
             gameIsOn=false;
             return;
         }
@@ -470,5 +540,3 @@ IOhandler::IOhandler()
 IOhandler::~IOhandler()
 {
 }
-// todo backtrack king being attacked and based on that get what cells cannot be moved and where they cant go
-// nuzno peredavat v recursive i v obicny specialny parameter bana hotby dlya figur i sostojanije shaha i scitat kajdy raz kogda idem dalse v recurcive.

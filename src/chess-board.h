@@ -6,15 +6,7 @@
 #include <map>
 #include <sstream>
 
-enum MovePrices
-{
-    Mate = -999999,
-    Pate = 0,
-    FirstMove = 1,
-    Castling = 50
-};
-const float ATTACK_COST=0.05;
-const float worth=0.9;
+
 struct Move
 {
     std::pair<int,int> start;

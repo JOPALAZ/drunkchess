@@ -427,11 +427,17 @@ Move ChessBoard::getBestMove(bool white)
     deleteBoard(imaginaryBoard);
     try
     {
-        return out.at(j).move;
+        if(out.size()==0)
+        {
+            return {{-1,-1},{-1,-1}};
+        }
+        else
+        {
+            return out.at(j).move;
+        }
     }
     catch(std::exception& ex)
     {
-        //std::cout<<ex.what()<<std::endl;
         throw std::runtime_error("NO MOVE IS POSSIBLE" + out.size());
         return {{-1,-1},{-1,-1}};
     }
@@ -609,10 +615,19 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
         {
             if(board[move.start.first][move.start.second]->isWhite()!=board[move.end.first][move.end.second]->isWhite()&&board[move.end.first][move.end.second]->getCode()!=EMPTY)
             {
-                score = board[move.end.first][move.end.second]->getCode();
+                score = getScore(board[move.end.first][move.end.second]->getCode());
                 if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
                 {
                     score += FirstMove; 
+                }
+                if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.start.first][move.start.second]->isWhite())
+                {   code=askReplacement();
+                    buf = createPeice(move.end.second,move.end.first,board[move.start.first][move.start.second]->isWhite(),code,board[move.start.first][move.start.second]->getLogger(),board,true);
+                    delete board[move.start.first][move.start.second];
+                    delete board[move.end.first][move.end.second];
+                    board[move.end.first][move.end.second] = buf;
+                    board[move.start.first][move.start.second] = new ChessPieceEmpty(move.start.second,move.start.first,board[move.end.first][move.end.second]->getLogger(),board);
+                    return score+getScore(code);
                 }
                 delete board[move.end.first][move.end.second];
                 board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
@@ -627,21 +642,25 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score -= getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
                     {
                         score += FirstMove; 
                     }
                     board[move.end.first][move.end.second]->move(move.start);
-                    if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.end.first][move.end.second]->isWhite())
+                    if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.start.first][move.start.second]->isWhite())
                     {   code=askReplacement();
                         buf = createPeice(move.end.second,move.end.first,board[move.end.first][move.end.second]->isWhite(),
-                        code,board[move.end.first][move.end.second]->getLogger(),board);
+                        code,board[move.end.first][move.end.second]->getLogger(),board,true);
                         delete board[move.start.first][move.start.second];
                         board[move.start.first][move.start.second] = board[move.end.first][move.end.second];
                         board[move.end.first][move.end.second] = buf;
-                        return code;
+                        for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
+                        {
+                            score += getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
+                        } 
+                        return score+getScore(code);
                     }
                     buf = board[move.end.first][move.end.second];
                     board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
@@ -649,7 +668,7 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
                     board[move.start.first][move.start.second] = buf;
                     for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score += getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     } 
                     return score;
                 }
@@ -659,11 +678,11 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score -= getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score -= getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     if(move.end.second==0)
                     {
@@ -684,11 +703,11 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
                     performMove({move.start,bufMoveKing},board,true);
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveKing.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score += getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveRook.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score += getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     score+=Castling;
                     return score;
@@ -699,10 +718,19 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
         {
             if(board[move.start.first][move.start.second]->canAttack(move.end))
             {
-                score = board[move.end.first][move.end.second]->getCode();
+                score = getScore(board[move.end.first][move.end.second]->getCode());
                 if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
                 {
                     score += FirstMove; 
+                }
+                if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.start.first][move.start.second]->isWhite())
+                {   code=askReplacement();
+                    buf = createPeice(move.end.second,move.end.first,board[move.start.first][move.start.second]->isWhite(),code,board[move.start.first][move.start.second]->getLogger(),board,true);
+                    delete board[move.start.first][move.start.second];
+                    delete board[move.end.first][move.end.second];
+                    board[move.end.first][move.end.second] = buf;
+                    board[move.start.first][move.start.second] = new ChessPieceEmpty(move.start.second,move.start.first,board[move.end.first][move.end.second]->getLogger(),board);
+                    return score+getScore(code);
                 }
                 delete board[move.end.first][move.end.second];
                 board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
@@ -718,21 +746,25 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score -= getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     } 
                     if(!board[move.start.first][move.start.second]->hasMoved()&&board[move.start.first][move.start.second]->getCode()!=KING&&board[move.start.first][move.start.second]->getCode()!=ROOK)
                     {
                         score += FirstMove; 
                     }
                     board[move.end.first][move.end.second]->move(move.start);
-                    if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.end.first][move.end.second]->isWhite())
+                    if(board[move.start.first][move.start.second]->getCode()==PAWN&&move.end.first==7*board[move.start.first][move.start.second]->isWhite())
                     {   code=askReplacement();
                         buf = createPeice(move.end.second,move.end.first,board[move.end.first][move.end.second]->isWhite(),
-                        code,board[move.end.first][move.end.second]->getLogger(),board);
+                        code,board[move.end.first][move.end.second]->getLogger(),board,true);
                         delete board[move.start.first][move.start.second];
                         board[move.start.first][move.start.second] = board[move.end.first][move.end.second];
                         board[move.end.first][move.end.second] = buf;
-                        return code;
+                        for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
+                        {
+                            score += getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
+                        } 
+                        return score+getScore(code);
                     }
                     buf = board[move.end.first][move.end.second];
                     board[move.end.first][move.end.second] = board[move.start.first][move.start.second];
@@ -740,7 +772,7 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
                     board[move.start.first][move.start.second] = buf;
                     for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score += getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     } 
                     return score;
                 }
@@ -750,11 +782,11 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
                     score = 0;
                     for(std::pair<int,int> coord : board[move.start.first][move.start.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score -= getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     for(std::pair<int,int> coord : board[move.end.first][move.end.second]->getAttackCandidates(true))
                     {
-                        score -= board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score -= getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     if(move.end.second==0)
                     {
@@ -775,11 +807,11 @@ float ChessBoard::performMove(const Move& move, ChessPieceBase*** board,bool ove
                     performMove({move.start,bufMoveKing},board,true);
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveKing.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score += getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     for(std::pair<int,int> coord : board[bufMoveKing.first][bufMoveRook.second]->getAttackCandidates(true))
                     {
-                        score += board[coord.first][coord.second]->getCode()*ATTACK_COST;
+                        score += getScore(board[coord.first][coord.second]->getCode())*ATTACK_COST;
                     }
                     score+=Castling;
                     return score;
