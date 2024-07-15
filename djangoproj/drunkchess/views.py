@@ -43,6 +43,7 @@ def move(request,startX,startY,endX,endY):
     cserver=clients[id].cserver
     sendCommandToServer(cserver,f"move {startX}{startY}:{endX}{endY}")
     response = read_last_output(cserver)
+    print(response)
     if(str(response).split('|')[0]=='NOT OK'):
         return JsonResponse({'status': 'error', 'what': response.split('|')[1]}, status=400)
     if(response!="OK"):

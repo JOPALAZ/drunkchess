@@ -412,7 +412,10 @@ void IOhandler::move(const std::string& move)
             bestMove = ch->getBestMove(!this->side);
             if(bestMove.start.first==-1)
             {
-                *output<<"YOU WON!!!"<<std::endl;
+                if(ChessBoard::simplifiedEvaluateCheckMate(!this->side,ChessBoard::findKing(!this->side,ch->getBoard()),ch->getBoard()))
+                    *output<<"YOU WON!!!"<<std::endl;
+                else
+                    *output<<"TIE!!!"<<std::endl;
                 printBoard();
                 if(ch)
                 {
@@ -433,8 +436,6 @@ void IOhandler::move(const std::string& move)
             {
                 *output<<"TIE!!!"<<std::endl;
             }
-            if(!server)
-                printBoard();
             if(id!=1)
             {
                 printBoard();
