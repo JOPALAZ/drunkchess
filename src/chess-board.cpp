@@ -299,7 +299,10 @@ Move ChessBoard::getBestMove(bool white)
     int i,j,counter;
     float dScore;
     float maxScore;
-    maxDepth=difficulty/2;
+    if(difficulty<6)
+        maxDepth=difficulty;
+    else
+        maxDepth=difficulty/2;
     std::vector<std::thread> threads;
     Thread_Parameter* param;
     std::vector<Thread_Parameter*> params;

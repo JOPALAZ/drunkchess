@@ -383,30 +383,12 @@ void IOhandler::setParams()
 }
 void IOhandler::move(const std::string& move)
 {
-    Move mv = {transcodePosition(move.substr(0,2)),transcodePosition(move.substr(3,5))};
+    Move mv;
     Move bestMove;
     bool isGood = true;
     int id;
-    if (ch->getBoard()[mv.start.first][mv.start.second]->isWhite()==this->side&&ch->getBoard()[mv.start.first][mv.start.second]->getCode()!=EMPTY)
+    if(move == "enemy")
     {
-        if(mv.start==mv.end)
-        {
-            throw std::logic_error("INVALID MOVE");
-        }
-        checkMate = ChessBoard::evaluateCheckMate(this->side,ch->getBoard());
-        id =ChessBoard::findFigureIndex(checkMate.restrictions,mv.start);
-        if(id!=-1)
-        {
-            isGood=std::find(checkMate.restrictions.at(id).unrestrictedPositions.begin(),checkMate.restrictions.at(id).unrestrictedPositions.end(),mv.end)!=checkMate.restrictions.at(id).unrestrictedPositions.end();
-        }
-        if(checkMate.kingAttacked&&isGood)
-        {
-            isGood=std::find(checkMate.saveKingPath.begin(),checkMate.saveKingPath.end(),mv.end)!=checkMate.saveKingPath.end();
-        }
-        if(isGood||ch->getBoard()[mv.start.first][mv.start.second]->getCode()==KING)
-            ch->performMove(mv,ch->getBoard());
-        else
-            throw std::logic_error("CANT MOVE THERE, KING IS ATTACKED");
         try
         {
             bestMove = ch->getBestMove(!this->side);
@@ -448,7 +430,6 @@ void IOhandler::move(const std::string& move)
                 gameIsOn=false;
                 return;
             }
-
         }
         catch(...)
         {
@@ -464,12 +445,36 @@ void IOhandler::move(const std::string& move)
             gameIsOn=false;
             return;
         }
-        
+        return;
+    }
+    mv = {transcodePosition(move.substr(0,2)),transcodePosition(move.substr(3,5))};
+
+    if (ch->getBoard()[mv.start.first][mv.start.second]->isWhite()==this->side&&ch->getBoard()[mv.start.first][mv.start.second]->getCode()!=EMPTY)
+    {
+        if(mv.start==mv.end)
+        {
+            throw std::logic_error("INVALID MOVE");
+        }
+        checkMate = ChessBoard::evaluateCheckMate(this->side,ch->getBoard());
+        id =ChessBoard::findFigureIndex(checkMate.restrictions,mv.start);
+        if(id!=-1)
+        {
+            isGood=std::find(checkMate.restrictions.at(id).unrestrictedPositions.begin(),checkMate.restrictions.at(id).unrestrictedPositions.end(),mv.end)!=checkMate.restrictions.at(id).unrestrictedPositions.end();
+        }
+        if(checkMate.kingAttacked&&isGood)
+        {
+            isGood=std::find(checkMate.saveKingPath.begin(),checkMate.saveKingPath.end(),mv.end)!=checkMate.saveKingPath.end();
+        }
+        if(isGood||ch->getBoard()[mv.start.first][mv.start.second]->getCode()==KING)
+            ch->performMove(mv,ch->getBoard());
+        else
+            throw std::logic_error("CANT MOVE THERE, KING IS ATTACKED");
     }
     else
     {
         throw std::logic_error("YOU CAN'T MOVE THAT FIGURE");
     }
+    
     
 }
 void IOhandler::printMoveCandidates(std::string start)

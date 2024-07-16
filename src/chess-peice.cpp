@@ -25,6 +25,7 @@ bool kingNear(ChessPieceBase*** board, std::pair<int,int> pos,bool white)
     }
     return false;
 }
+
 bool ChessPieceBase::isPlayable()
 {
     return playable;
@@ -687,6 +688,63 @@ ChessPeiceKing::ChessPeiceKing(int x, int y,bool color,Logger* log,ChessPieceBas
     this->moved=moved_;
 
 }
+bool canCastle(ChessPeiceKing* king, int direction)
+{
+    ChessPieceBase*** board = king->getBoard();
+    bool white = king->isWhite();
+    int x = king->getX();
+    int y = king->getY();
+    int i;
+    switch (direction)
+    {
+    case 0:
+        if(board[7*!white][0]->getCode()==ROOK&&board[7*!white][0]->isWhite()==white&&!board[7*!white][0]->hasMoved()&&board[7*!white][0]->canMoveTo({y,x-1}))
+        {
+            for(i=0;i<=x;++i)
+            {
+                if(ChessBoard::simplifiedEvaluateCheckMate(white,{y,i},board))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+        break;
+    case 1:
+        if(board[7*!white][7]->getCode()==ROOK&&board[7*!white][7]->isWhite()==white&&!board[7*!white][7]->hasMoved()&&board[7*!white][7]->canMoveTo({y,x+1}))
+        {
+            for(i=7;i>=x;--i)
+            {
+                if(ChessBoard::simplifiedEvaluateCheckMate(white,{y,i},board))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+        break;
+    case 2:
+        if(board[7*white][x]->getCode()==ROOK&&board[7*white][x]->isWhite()==white&&!board[7*white][x]->hasMoved()&&board[7*white][x]->canMoveTo({y+2*white-1,x}))
+        {
+            for(i=0;i<BOARDSIZE;++i)
+            {
+                if(ChessBoard::simplifiedEvaluateCheckMate(white,{i,x},board))
+                {
+                    return false;
+                }
+                
+            }
+            return true;
+        }
+        return false;
+        break;
+    default:
+        return false;
+        break;
+    }
+}
 std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
 {
     std::vector<std::pair<int, int>> out;
@@ -706,15 +764,15 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates()
     }
     if(moved==false)
     {
-        if(board[7*!white][0]->getCode()==ROOK&&board[7*!white][0]->isWhite()==white&&!board[7*!white][0]->hasMoved()&&board[7*!white][0]->canMoveTo({getY(),getX()-1})&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{this->y,this->x-2},this->board))
+        if(canCastle(this,0))
         {
             out.push_back({7*!white,0});
         }
-        if(board[7*!white][7]->getCode()==ROOK&&board[7*!white][7]->isWhite()==white&&!board[7*!white][7]->hasMoved()&&board[7*!white][7]->canMoveTo({getY(),getX()+1})&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{this->y,this->x+2},this->board))
+        if(canCastle(this,1))
         {
             out.push_back({7*!white,7});
         }
-        if(board[7*white][getX()]->getCode()==ROOK&&board[7*white][getX()]->isWhite()==white&&!board[7*white][getX()]->hasMoved()&&board[7*white][getX()]->canMoveTo({getY()+2*white-1,getX()})&&!ChessBoard::simplifiedEvaluateCheckMate(this->white,{this->y+4*white-2,this->x},this->board))
+        if(canCastle(this,2))
         {
             out.push_back({7*white,getX()});
         }

@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.http import JsonResponse
 from djangoproj.settings import SESSION_COOKIE_AGE
+from .models import Item
 import subprocess
 import uuid
 import time
@@ -26,7 +27,9 @@ def set_params(request):
             return JsonResponse({'status': 'error'}, status=400)
     return JsonResponse({'status': 'success'})
 
-
+def leaders(request):
+    print(Item.objects.order_by('-moves'))
+    return render(request, 'drunkchess/leader.html',{'leaderboard': Item.objects.order_by('moves')[0:10]})
 def check_client_activity():
     while True:
         now = timezone.now()
@@ -43,7 +46,7 @@ def move(request,startX,startY,endX,endY):
     cserver=clients[id].cserver
     sendCommandToServer(cserver,f"move {startX}{startY}:{endX}{endY}")
     response = read_last_output(cserver)
-    print(response)
+    #print(response)
     if(str(response).split('|')[0]=='NOT OK'):
         return JsonResponse({'status': 'error', 'what': response.split('|')[1]}, status=400)
     if(response!="OK"):
@@ -53,9 +56,37 @@ def move(request,startX,startY,endX,endY):
         clients[id].started=False
     else:
         setupData=getSetupData(cserver)
-    #print(setupData)
     return JsonResponse({'status': 'success', 'setup_data': setupData, 'special_condition': response})
-    
+def save_result(request):
+    global clients
+    id=request.headers['X-Client-id']
+    if id in clients.keys():
+        item = Item(moves=int(request.headers['moves']),name=request.headers['scoreName'])
+        item.save()
+        print('saved')
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'what':'Please, reload the page. Result can\'t be saved'})
+
+def move_enemy(request):
+    global clients
+    id=request.headers['X-Client-id']
+    cserver=clients[id].cserver
+    sendCommandToServer(cserver,f"move enemy")
+    response = read_last_output(cserver)
+    #print(response)
+    if(response==None):
+        return({'status': 'success', 'setup_data': 'None', 'special_condition': 'AI SURRENDERED, YOU WON.'})
+    if(str(response).split('|')[0]=='NOT OK'):
+        return JsonResponse({'status': 'error', 'what': response.split('|')[1]}, status=400)
+    if(response!="OK"):
+        setupData=read_last_output(cserver)
+        setupData=parseSetupData(setupData)
+        read_last_output(cserver)
+        clients[id].started=False
+    else:
+        setupData=getSetupData(cserver)
+    return JsonResponse({'status': 'success', 'setup_data': setupData, 'special_condition': response})
+
 def read_last_output(cserver):
     output = cserver.stdout.readline().strip()
     if output:
@@ -108,12 +139,16 @@ def getSetupData(cserver):
 
 
 def parseSetupData(data):
-    pieces_data = data.split()
     pieces = []
-    for piece_code in pieces_data:
-        color = piece_code[0]
-        code = piece_code[1]
-        pieces.append({'color': color, 'code': code})
+    try:
+        pieces_data = data.split()
+        for piece_code in pieces_data:
+            color = piece_code[0]
+            code = piece_code[1]
+            pieces.append({'color': color, 'code': code})
+    except:
+        pieces.clear('color')
+
     return pieces
 
 def board(request):
@@ -165,7 +200,7 @@ async def start_game(request, difficulty, side):
     global clients
     id = request.headers.get('X-Client-id')
     data = clients[id]
-    #print(data.started)
+    print(data.started)
     clients[id].started 
     if request.method == 'POST':
         if clients[id].started:

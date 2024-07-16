@@ -25,6 +25,7 @@ public:
     void move(const std::pair<int,int>& dest);
     int getX() {return x;}
     int getY() {return y;}
+    ChessPieceBase*** getBoard() {return board;};
     Logger* getLogger() {return log;}
     bool hasMoved() {return moved;}
     ChessPieceCode getCode();

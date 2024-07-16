@@ -2,243 +2,17 @@
 {% load extra static %}
 <html>
 <head>
+    {% csrf_token %}
+    <link rel="stylesheet" type="text/css" href="{% static 'styles.css' %}">
     <title>Drunk Chess Board</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to bottom right, #2c3e50, #bdc3c7);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            max-width: 90vw;
-            max-height: 90vh;
-        }
-        header {
-            background: #1abc9c;
-            color: white;
-            width: 100%;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            box-sizing: border-box;
-        }
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .header-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        .header-buttons button {
-            background: white;
-            color: #1abc9c;
-            border: 1px solid #1abc9c;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s, color 0.3s;
-        }
-        .header-buttons button:hover {
-            background: #1abc9c;
-            color: white;
-        }
-        .content {
-            display: flex;
-            flex-direction: row;
-            padding: 20px;
-            gap: 20px;
-            width: 100%;
-            height: 100%;
-            align-items: center;
-            justify-content: center;
-        }
-        .chess-board {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            width: 70vmin;
-            height: 70vmin;
-        }
-        .chess-board div {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .chess-board div img {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-        .circle {
-            height: 100%;
-            width: 100%;
-            background-color: #555;
-            border-radius: 50%;
-            position: absolute;
-            z-index: 0;
-        }
-        .white {
-            background-color: hsl(160, 50%, 80%);
-        }
-        .black {
-            background-color: hsl(160, 50%, 40%);
-        }
-        .options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-        }
-        .options label {
-            font-weight: bold;
-            color: #333;
-        }
-        .options input, .options select {
-            padding: 5px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .options button {
-            background: #1abc9c;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .options button:hover {
-            background: #16a085;
-        }
-        .theme-toggle-button {
-            background: #1abc9c;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 10px;
-        }
-        .theme-toggle-button:hover {
-            background: #16a085;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgb(0,0,0);
-            background-color: rgba(0,0,0,0.4);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 0% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .dark-theme {
-            background: #333;
-            color: #ccc;
-        }
-        .dark-theme header {
-            background: #444;
-            color: #ccc;
-        }
-        .dark-theme .modal-content
-        {
-            background: #555;
-        }
-        .dark-theme .container  {
-            background: #555;
-        }
-        .dark-theme .header-buttons button {
-            background: #555;
-            color: #ccc;
-            border: 1px solid #777;
-        }
-        .dark-theme .header-buttons button:hover {
-            background: #666;
-            color: white;
-        }
-        .dark-theme .options label {
-            color: #ccc;
-        }
-        .dark-theme .options input,
-        .dark-theme .options select {
-            background: #666;
-            color: #ccc;
-            border: 1px solid #777;
-        }
-        .dark-theme .options button,
-        .dark-theme .theme-toggle-button {
-            background: #888;
-            color: white;
-        }
-        .dark-theme .options button:hover,
-        .dark-theme .theme-toggle-button:hover {
-            background: #999;
-        }
-    </style>
     <script>
         const clientId = "{{ client_id }}";
         let selectedFigure = false;
         let startpos = [-1, -1];
         let gameIsOn = false;
-         localStorage.setItem('client_id', clientId);
-        console.log("Client ID saved in LocalStorage:", clientId);
+        let competitive = false;
+        let moves = 0;
+        console.log("Client ID", clientId);
         let lock=false;
         function showMessage(message) {
             document.getElementById('messageText').innerText = message;
@@ -247,6 +21,74 @@
 
         function closeMessage() {
             document.getElementById('messageModal').style.display = 'none';
+        }
+        function showSave()
+        {
+            document.getElementById('saveText').innerText = `Your result: ${moves} moves`; 
+            document.getElementById('saveScoreModal').style.display = 'flex';
+        }
+        function closeSave(save)
+        {
+            document.getElementById('saveScoreModal').style.display = 'none';
+            if(save != false)
+            {
+                saveData();
+            }
+        }
+        function saveData()
+        {
+            const Name = document.getElementById('scoreName').value;
+            fetch(`/save-score/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Client-ID': clientId,
+                            'scoreName':Name,
+                            'moves': moves,
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data.status!='success')
+                        {
+                            alert(data.what);
+                        }
+                    });
+        }
+        function enemyMove()
+        {
+            fetch(`/move-enemy/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Client-ID': clientId,
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        removeCircles();
+                        startpos = [-1, -1];
+                        selectedFigure = false;
+                        lock=false;
+                        if (data.status === 'success') {
+                            if(data.setup_data!='None')
+                                updateBoard(data.setup_data);
+                            if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
+                                if(String(data.special_condition).includes("WON")&&competitive)
+                                {
+                                    showSave();
+                                }
+                                showMessage(data.special_condition);
+                                gameIsOn = false
+                            }
+                        }
+                        else
+                        {
+                           console.log(data.what);
+                        }
+                    });
         }
         function cellClicked(col, row) {
             if(gameIsOn&&!lock){
@@ -262,21 +104,25 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        console.log(data);
                         removeCircles();
                         startpos = [-1, -1];
                         selectedFigure = false;
-                        lock=false
                         if (data.status === 'success') {
                             updateBoard(data.setup_data);
+                            moves+=1;
                             if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
                                 showMessage(data.special_condition);
                                 gameIsOn = false
+                            }
+                            else
+                            {
+                                enemyMove();
                             }
                         }
                         else
                         {
                            console.log(data.what);
+                           lock=false;
                         }
                     });
                 } else {
@@ -331,33 +177,89 @@
                 },
             })
         }
-
         function startGame() {
-            const difficulty = document.getElementById('difficulty').value;
-            const side = document.getElementById('side').value;
-            console.log(clientId)
-            fetch(`/start-game/${difficulty}/${side}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Client-ID': clientId,
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                if (data.status === 'success') {
-                    updateBoard(data.setup_data);
-                    gameIsOn = true;
-                } else {
-                    removeCircles();
-                    startpos = [-1, -1];
-                    selectedFigure = false;
-                }
-            });
-        }
+            if(lock==false)
+            {
+                document.getElementById('settingsButton').disabled = false;
+                document.getElementById('settingsButton').style.display='flex';
+                competitive=false;
+                moves = 0;
+                const difficulty = document.getElementById('difficulty').value;
+                const side = document.getElementById('side').value;
 
+                fetch(`/start-game/${difficulty}/${side}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateBoard(data.setup_data);
+                        gameIsOn = true;
+                    } else {
+                        removeCircles();
+                        startpos = [-1, -1];
+                        selectedFigure = false;
+                    }
+                });
+            }
+            
+        }
+        function startCompetitive()
+        {
+            if(lock==false)
+            {
+                lock=true;
+                competitive=true;
+                document.getElementById('settingsButton').disabled = true;
+                document.getElementById('settingsButton').style.display='none';
+                moves = 0;
+                const difficulty = 10;
+                const side = Math.floor(Math.random()*2)==1? 'black':'white';
+                setDefaultSettings();
+                fetch(`/start-game/${difficulty}/${side}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateBoard(data.setup_data);
+                        gameIsOn = true;
+                        lock=false;
+                    } else {
+                        removeCircles();
+                        startpos = [-1, -1];
+                        selectedFigure = false;
+                    }
+                });
+            }
+        }
+        function setDefaultSettings()
+        {
+            document.getElementById('priceEmpty').value=0;
+            document.getElementById('pricePawn').value=100;
+            document.getElementById('priceKnight').value=320;
+            document.getElementById('priceBishop').value=330;
+            document.getElementById('priceRook').value=500;
+            document.getElementById('priceQueen').value=900;
+            document.getElementById('priceKing').value=1100;
+            document.getElementById('priceMate').value=-999999;
+            document.getElementById('pricePate').value=0;
+            document.getElementById('priceFirstMove').value=50;
+            document.getElementById('priceCastling').value=1;
+            document.getElementById('attackCost').value=0.05;
+            document.getElementById('worth').value=0.9;
+            saveSettings();
+        }
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -391,7 +293,7 @@
                 }
             });
         }
-
+        
         function showSettings() {
             document.getElementById('settingsModal').style.display = "block";
         }
@@ -401,51 +303,71 @@
         }
 
         function saveSettings() {
-            const piecePrices = {
-                empty: parseInt(document.getElementById('priceEmpty').value),
-                pawn: parseInt(document.getElementById('pricePawn').value),
-                knight: parseInt(document.getElementById('priceKnight').value),
-                bishop: parseInt(document.getElementById('priceBishop').value),
-                rook: parseInt(document.getElementById('priceRook').value),
-                queen: parseInt(document.getElementById('priceQueen').value),
-                king: parseInt(document.getElementById('priceKing').value),
-            };
-            const priceMate = parseInt(document.getElementById('priceMate').value);
-            const pricePate = parseInt(document.getElementById('pricePate').value);
-            const firstMovePrice = parseInt(document.getElementById('priceFirstMove').value);
-            const castlingPrice = parseInt(document.getElementById('priceCastling').value);
-            const attackCost = parseFloat(document.getElementById('attackCost').value);
-            const worth = parseFloat(document.getElementById('worth').value);
-            const headers = new Headers({
-                'KING': piecePrices.king,
-                'QUEEN': piecePrices.queen,
-                'ROOK': piecePrices.rook,
-                'BISHOP': piecePrices.bishop,
-                'KNIGHT': piecePrices.knight,
-                'PAWN': piecePrices.pawn,
-                'EMPTY': piecePrices.empty,
-                'MATE': priceMate,
-                'PATE': pricePate,
-                'FMOVE': firstMovePrice,
-                'CAST': castlingPrice,
-                'ATTACK': attackCost,
-                'WORTH': worth,
-                'Content-Type': 'application/json',
-                'X-Client-ID': clientId,
-                'X-CSRFToken': getCookie('csrftoken'),
-            });
-
-            // Send the settings to the server
-            fetch('/set-params/', {
-                method: 'POST',
-                headers: headers
-            })
-            closeSettings();
+            if(lock==false)
+            {
+                const piecePrices = {
+                    empty: parseInt(document.getElementById('priceEmpty').value),
+                    pawn: parseInt(document.getElementById('pricePawn').value),
+                    knight: parseInt(document.getElementById('priceKnight').value),
+                    bishop: parseInt(document.getElementById('priceBishop').value),
+                    rook: parseInt(document.getElementById('priceRook').value),
+                    queen: parseInt(document.getElementById('priceQueen').value),
+                    king: parseInt(document.getElementById('priceKing').value),
+                };
+                const priceMate = parseInt(document.getElementById('priceMate').value);
+                const pricePate = parseInt(document.getElementById('pricePate').value);
+                const firstMovePrice = parseInt(document.getElementById('priceFirstMove').value);
+                const castlingPrice = parseInt(document.getElementById('priceCastling').value);
+                const attackCost = parseFloat(document.getElementById('attackCost').value);
+                const worth = parseFloat(document.getElementById('worth').value);
+                const headers = new Headers({
+                    'KING': piecePrices.king,
+                    'QUEEN': piecePrices.queen,
+                    'ROOK': piecePrices.rook,
+                    'BISHOP': piecePrices.bishop,
+                    'KNIGHT': piecePrices.knight,
+                    'PAWN': piecePrices.pawn,
+                    'EMPTY': piecePrices.empty,
+                    'MATE': priceMate,
+                    'PATE': pricePate,
+                    'FMOVE': firstMovePrice,
+                    'CAST': castlingPrice,
+                    'ATTACK': attackCost,
+                    'WORTH': worth,
+                    'Content-Type': 'application/json',
+                    'X-Client-ID': clientId,
+                    'X-CSRFToken': getCookie('csrftoken'),
+                });
+                fetch('/set-params/', {
+                    method: 'POST',
+                    headers: headers
+                })
+                closeSettings();
+            }
         }
+        function validateDifficulty(input) {
+            if (parseFloat(input.value) < parseFloat(input.min)) input.value = input.min;
+            if (parseFloat(input.value) > parseFloat(input.max)) input.value = input.max;
+            if (input.value ==='') input.value=input.min;
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const darkTheme = localStorage.getItem('darktheme');
+            if (darkTheme === '1') {
+                console.log("Dark theme is enabled");
+                document.body.classList.add('dark-theme');
+            }
+        });
 
         function toggleDarkTheme() {
             document.body.classList.toggle('dark-theme');
+            const isDarkTheme = document.body.classList.contains('dark-theme');
+            if (isDarkTheme) {
+                localStorage.setItem('darktheme', '1');
+            } else {
+                localStorage.setItem('darktheme', '0');
+            }
         }
+
         setInterval(resetIdle, 300000);
         window.onbeforeunload = function() {
             fetch(`/stop/`, {
@@ -464,10 +386,9 @@
         <header>
             <h1>Drunk Chess Board</h1>
             <div class="header-buttons">
-                <button onclick="startGame()">Start Game</button>
-                <button onclick="showSettings()">Settings</button>
+                <button id="settingsButton" onclick="showSettings()" >Settings</button>
                 <button onclick="toggleDarkTheme()">Toggle Dark Theme</button>
-                <button>Help</button>
+                <button onclick="window.location.href='leaderboard/'">Leaderboard</button>
             </div>
         </header>
         <div class="content">
@@ -483,13 +404,14 @@
             </div>
             <div class="options">
                 <label for="difficulty">Difficulty:</label>
-                <input type="number" id="difficulty" name="difficulty" min="1" max="10" value="5">
+                <input type="number" id="difficulty" name="difficulty" min="1" max="10" onblur="validateDifficulty(this)" value="5">
                 <label for="side">Side:</label>
                 <select id="side" name="side">
                     <option value="white">White</option>
                     <option value="black">Black</option>
                 </select>
                 <button onclick="startGame()">Start</button>
+                <button onclick="startCompetitive()">Start Competitive</button>
             </div>
         </div>
     </div>
@@ -497,36 +419,50 @@
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeSettings()">&times;</span>
+            <span class="close", id="closeButton" onclick="closeSettings()">&times;</span>
             <h2>Settings</h2>
             <div class="options">
                 <label for="priceEmpty">Price of Empty Cell:</label>
-                <input type="number" id="priceEmpty" min="0" step="1" max="2147483646"max="2147483646" value="0">
+                <input type="number" id="priceEmpty" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="0">
                 <label for="pricePawn">Price of Pawn:</label>
-                <input type="number" id="pricePawn" min="0" step="1" max="2147483646"value="100">
+                <input type="number" id="pricePawn" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="100">
                 <label for="priceKnight">Price of Knight:</label>
-                <input type="number" id="priceKnight" min="0" step="1" max="2147483646"value="320">
+                <input type="number" id="priceKnight" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="320">
                 <label for="priceBishop">Price of Bishop:</label>
-                <input type="number" id="priceBishop" min="0" step="1" max="2147483646"value="330">
+                <input type="number" id="priceBishop"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="330">
                 <label for="priceRook">Price of Rook:</label>
-                <input type="number" id="priceRook" min="0" step="1" max="2147483646"value="500">
+                <input type="number" id="priceRook"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="500">
                 <label for="priceQueen">Price of Queen:</label>
-                <input type="number" id="priceQueen" min="0" step="1" max="2147483646"value="900">
+                <input type="number" id="priceQueen"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="900">
                 <label for="priceKing">Price of King:</label>
-                <input type="number" id="priceKing" min="0" step="1" max="2147483646"value="1100">
+                <input type="number" id="priceKing"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="1100">
                 <label for="priceMate">Price of Mate:</label>
-                <input type="number" id="priceMate" min="0" step="1" max="2147483646"value="-999999">
+                <input type="number" id="priceMate"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="-999999">
                 <label for="pricePate">Price of Pate:</label>
-                <input type="number" id="pricePate" min="0" step="1" max="2147483646"value="0">
+                <input type="number" id="pricePate"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="0">
                 <label for="priceCastling">Price of Castling:</label>
-                <input type="number" id="priceCastling" min="0" step="1" max="2147483646"value="50">
+                <input type="number" id="priceCastling"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="50">
                 <label for="priceFirstMove">Price of First Move:</label>
-                <input type="number" id="priceFirstMove" min="0" step="1" max="2147483646"value="1">
+                <input type="number" id="priceFirstMove"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="1">
                 <label for="attackCost">Attack Cost Coefficient:</label>
-                <input type="number" id="attackCost" min="0" max="2" step="0.005" value="0.05">
+                <input type="number" id="attackCost" min="0" max="2" step="0.005" onblur="validateDifficulty(this)" value="0.05">
                 <label for="worth">Worth Coefficient:</label>
-                <input type="number" id="worth" min="0" max="2" step="0.005" value="0.9">
-                <button onclick="saveSettings()">Save</button>
+                <input type="number" id="worth" min="0" max="2" step="0.005" onblur="validateDifficulty(this)" value="0.9">
+                <div>
+                    <button onclick="closeSettings()">Save</button>
+                    <button onclick="setDefaultSettings()">Set Defaults</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="saveScoreModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSave(false)">&times;</span>
+            <div class="options">
+                <p id="saveText"></p>
+                <label for="priceEmpty">Name: </label>
+                <input type="string" id="scoreName">
+                <button onclick="closeSave(true)">Save</button>
             </div>
         </div>
     </div>
@@ -534,6 +470,7 @@
         <div class="modal-content">
             <span class="close" onclick="closeMessage()">&times;</span>
             <p id="messageText"></p>
+            
         </div>
     </div>
 </body>
