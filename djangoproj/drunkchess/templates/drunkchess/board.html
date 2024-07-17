@@ -245,8 +245,8 @@
             if (lock) return;
             lock = true;
             clearBoard();
-            document.getElementById('settingsButton').disabled = false;
-            document.getElementById('settingsButton').style.display = 'flex';
+            document.getElementById('settingsButton').disabled = true;
+            document.getElementById('settingsButton').style.display = 'none';
             competitive = true;
             moves = 0;
             const difficulty = 10;
@@ -362,7 +362,6 @@
                     alert('Upload failed');
                     document.getElementById('file-input').value = '';
                     console.error('Error:', error);
-                    clearBoard();
                     startpos = [-1, -1];
                     selectedFigure = false;
                     lock=false;

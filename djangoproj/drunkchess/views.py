@@ -111,8 +111,9 @@ def upload(request):
     if request.method == 'POST' and request.FILES.get('file'):
         uploaded_file = request.FILES['file']
         try:
-            board = base64.b64decode(base64.b64decode(uploaded_file.read()).decode('utf-8'))
+            board = base64.b64decode(base64.b64decode(uploaded_file.read())).decode('utf-8')
             params = board.split()
+            print(board)
             if len(params) != 80:
                 raise ValueError("Incorrect file format")
 

@@ -1,16 +1,15 @@
 #pragma once
 #include <stdexcept>
 
-enum ChessPieceCode
-{
-    KING,
-    QUEEN,
-    ROOK,
-    BISHOP,
-    KNIGHT,
-    PAWN,
-    EMPTY,
-    NONE,
+enum ChessPieceCode {
+  KING,
+  QUEEN,
+  ROOK,
+  BISHOP,
+  KNIGHT,
+  PAWN,
+  EMPTY,
+  NONE,
 };
 
 extern int prices[8];
