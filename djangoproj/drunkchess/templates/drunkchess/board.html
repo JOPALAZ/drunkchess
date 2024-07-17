@@ -37,8 +37,11 @@
         }
         function saveData()
         {
-            const Name = document.getElementById('scoreName').value;
-            fetch(`/save-score/`, {
+            if(lock==false)
+            {
+                lock=true;
+                const Name = document.getElementById('scoreName').value;
+                fetch(`/save-score/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -50,14 +53,23 @@
                     })
                     .then(response => response.json())
                     .then(data => {
+                        lock=false;
                         if(data.status!='success')
                         {
                             alert(data.what);
                         }
                     });
+
+            }
+            else
+            {
+                alert('Wasn\'t saved.')
+            }
+            
         }
         function enemyMove()
         {
+            lock=true;
             fetch(`/move-enemy/`, {
                         method: 'POST',
                         headers: {
@@ -68,10 +80,10 @@
                     })
                     .then(response => response.json())
                     .then(data => {
+                        lock=false;
                         removeCircles();
                         startpos = [-1, -1];
                         selectedFigure = false;
-                        lock=false;
                         if (data.status === 'success') {
                             if(data.setup_data!='None')
                                 updateBoard(data.setup_data);
@@ -92,7 +104,7 @@
         }
         function cellClicked(col, row) {
             if(gameIsOn&&!lock){
-                lock=true
+                lock=true;
                 if (selectedFigure) {
                     fetch(`/move/${startpos[0]}/${startpos[1]}/${col}/${row}/`, {
                         method: 'POST',
@@ -104,6 +116,7 @@
                     })
                     .then(response => response.json())
                     .then(data => {
+                        lock=false;
                         removeCircles();
                         startpos = [-1, -1];
                         selectedFigure = false;
@@ -122,7 +135,6 @@
                         else
                         {
                            console.log(data.what);
-                           lock=false;
                         }
                     });
                 } else {
@@ -136,7 +148,7 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        lock=false
+                        lock=false;
                         startpos = [col, row];
                         selectedFigure = true;
                         removeCircles();
@@ -145,7 +157,28 @@
                 }
             }
         }
+        function flipBoard(black)
+        {
+            const letters = ['A','B','C','D','E','F','G','H'];
+            for (let i = black * 7; i >= 0 && i < 8; i += 1 - 2 * black) {
+                var el1 = document.getElementById(`cell-0-${i}`);
+                var el2 = document.getElementById(`cell-${i}-0`);
+                
+                if (el1) {
+                    const hor = document.createElement('span');
+                    hor.className = 'letter-horizontal';
+                    hor.textContent = letters[i];
+                    el1.appendChild(hor);
+                }
 
+                if (el2) {
+                    const vert = document.createElement('span');
+                    vert.className = 'letter-vertical';
+                    vert.textContent = i + 1;
+                    el2.appendChild(vert);
+                }
+            }
+        }
         function fillCirles(points) {
             points.forEach(piece => {
                 if (piece !== "NONE") {
@@ -179,14 +212,15 @@
         }
         function startGame() {
             if(lock==false)
-            {
+            { lock=true;
+                clearBoard();
                 document.getElementById('settingsButton').disabled = false;
                 document.getElementById('settingsButton').style.display='flex';
                 competitive=false;
                 moves = 0;
                 const difficulty = document.getElementById('difficulty').value;
                 const side = document.getElementById('side').value;
-
+                flipBoard(side=='black'? 1:0);
                 fetch(`/start-game/${difficulty}/${side}/`, {
                     method: 'POST',
                     headers: {
@@ -197,8 +231,13 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    lock=false;
                     if (data.status === 'success') {
                         updateBoard(data.setup_data);
+                        if(side==='black')
+                        {
+                            enemyMove();
+                        }
                         gameIsOn = true;
                     } else {
                         removeCircles();
@@ -213,13 +252,15 @@
         {
             if(lock==false)
             {
-                lock=true;
                 competitive=true;
+                lock=true;
+                clearBoard();
                 document.getElementById('settingsButton').disabled = true;
                 document.getElementById('settingsButton').style.display='none';
                 moves = 0;
                 const difficulty = 10;
                 const side = Math.floor(Math.random()*2)==1? 'black':'white';
+                flipBoard(side=='black'? 1:0);
                 setDefaultSettings();
                 fetch(`/start-game/${difficulty}/${side}/`, {
                     method: 'POST',
@@ -231,16 +272,22 @@
                 })
                 .then(response => response.json())
                 .then(data => {
+                    lock=false;
                     if (data.status === 'success') {
                         updateBoard(data.setup_data);
+                        if(side==='black')
+                        {
+                            enemyMove();
+                        }
+                        else
                         gameIsOn = true;
-                        lock=false;
                     } else {
                         removeCircles();
                         startpos = [-1, -1];
                         selectedFigure = false;
                     }
                 });
+
             }
         }
         function setDefaultSettings()
@@ -274,11 +321,54 @@
             }
             return cookieValue;
         }
+        async function dump() {
+            try {
+                const response = await fetch('/dump/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                });
 
-        function updateBoard(setupData) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'gameSituationDump.inta';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+            } catch (error) {
+                console.error('Couldn\'t dump:', error);
+            }
+        }
+        function clearBoard()
+        {
             const cells = document.querySelectorAll('.chess-board div');
             cells.forEach(cell => {
                 cell.innerHTML = '';
+            });
+        }
+        function updateBoard(setupData) {
+            const cells = document.querySelectorAll('.chess-board div');
+            cells.forEach(cell => {
+                const buf = cell.querySelectorAll('span');
+                cell.innerHTML = '';
+                if(buf)
+                {
+                    console.log(buf.length)
+                    buf.forEach(el =>
+                    {
+                        cell.appendChild(el);
+                    })
+                }
             });
 
             setupData.forEach((piece, index) => {
@@ -298,8 +388,12 @@
             document.getElementById('settingsModal').style.display = "block";
         }
 
-        function closeSettings() {
+        function closeSettings(save) {
             document.getElementById('settingsModal').style.display = "none";
+            if(save)
+            {
+                saveSettings();
+            }
         }
 
         function saveSettings() {
@@ -412,6 +506,8 @@
                 </select>
                 <button onclick="startGame()">Start</button>
                 <button onclick="startCompetitive()">Start Competitive</button>
+                <button onclick="dump()">SaveGameState</button>
+                <button onclick="">Set Defaults</button>
             </div>
         </div>
     </div>
@@ -419,7 +515,7 @@
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <span class="close", id="closeButton" onclick="closeSettings()">&times;</span>
+            <span class="close", id="closeButton" onclick="closeSettings(false)">&times;</span>
             <h2>Settings</h2>
             <div class="options">
                 <label for="priceEmpty">Price of Empty Cell:</label>
@@ -449,7 +545,7 @@
                 <label for="worth">Worth Coefficient:</label>
                 <input type="number" id="worth" min="0" max="2" step="0.005" onblur="validateDifficulty(this)" value="0.9">
                 <div>
-                    <button onclick="closeSettings()">Save</button>
+                    <button onclick="closeSettings(true)">Save</button>
                     <button onclick="setDefaultSettings()">Set Defaults</button>
                 </div>
             </div>

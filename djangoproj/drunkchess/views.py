@@ -1,10 +1,13 @@
 from django.shortcuts import render
 from django.utils import timezone
 from django.http import JsonResponse
+from django.http import HttpResponse
 from djangoproj.settings import SESSION_COOKIE_AGE
 from .models import Item
 import subprocess
 import uuid
+import json
+import base64 
 import time
 import threading
 
@@ -40,6 +43,32 @@ def check_client_activity():
                 del clients[client_id] 
         time.sleep(60)  
 threading.Thread(target=check_client_activity, daemon=True).start()
+
+
+
+
+
+
+
+
+
+
+def dump(request):
+    global clients
+    id=request.headers['X-Client-id']
+    cserver=clients[id].cserver
+    if request.method == 'POST':
+        sendCommandToServer(cserver=cserver,command='dump')
+        data = read_last_output(cserver=cserver)
+        read_last_output(cserver=cserver)
+        data = bytes(data, 'utf-8')
+        data = base64.b64encode(data)
+        data = base64.b64encode(data)
+        response = HttpResponse(data, content_type='application/octet-stream')
+        response['Content-Disposition'] = 'attachment; filename="gameSituationDump.inta"'
+        return response
+    else:
+        return HttpResponse(status=405) 
 def move(request,startX,startY,endX,endY):
     global clients
     id=request.headers['X-Client-id']
@@ -160,7 +189,7 @@ def board(request):
     for row in range(8):
         row_colors = []
         for col in range(8):
-            if (row + col) % 2 == 0:
+            if (row + col) % 2 == 1:
                 row_colors.append('white')
             else:
                 row_colors.append('black')

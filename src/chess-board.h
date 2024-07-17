@@ -73,6 +73,7 @@ public:
     static std::pair<int,int> findKing(bool side, ChessPieceBase*** board);
     static ChessPieceBase* createPeiceFromString(int x, int y,bool color, char code, Logger* log, ChessPieceBase*** board,bool moved_=false);
     static std::vector<std::pair<int,int>> getOverlap(const std::vector<std::pair<int,int>>& el1,const std::vector<std::pair<int,int>>& el2);
+    int getDifficulty(){return difficulty;}
     void makeBoardFromString(const std::string& str);
     void printBoard(bool white, std::ostream* out = &std::cout, bool server=false);
     Move getBestMove(bool white);

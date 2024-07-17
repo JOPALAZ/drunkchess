@@ -152,7 +152,7 @@ void ChessBoard::debugPrintDanger()
         std::cout<<std::endl;
     }
 }
-ChessBoard:: ChessBoard(Logger* log,int difficulty)
+ChessBoard::ChessBoard(Logger* log,int difficulty)
 :log(log),difficulty(difficulty)
 {
     int i;
@@ -261,7 +261,7 @@ void ChessBoard::makeBoardFromString(const std::string& str)
 {
     std::istringstream iss(str);
     int counter=0;
-    int i,j;
+    int i,j,k;
     std::string buf;
     deleteBoard(this->board);
     board = new ChessPieceBase**[BOARDSIZE];
@@ -280,9 +280,11 @@ void ChessBoard::makeBoardFromString(const std::string& str)
     }
     i=0;
     j=0;
-    while (iss>>buf&&counter!=64)
+    while (counter!=64&&iss>>buf)
     {
-        board[7-i][j]=createPeiceFromString(j,7-i,buf[0]=='W',buf[1],this->log,this->board);
+        k=std::stoi(buf);
+        counter++;
+        board[i][j]=createPeiceFromString(j,i,k&0b10,char(k>>3),this->log,this->board,k&0b1);
         j++;
         if(j==BOARDSIZE)
         {
@@ -290,8 +292,23 @@ void ChessBoard::makeBoardFromString(const std::string& str)
             j=0;
         }
     }
-    
-
+    for(i=0;i<8;++i)
+    {
+        iss>>buf;
+        prices[i] = stoi(buf);
+    }
+    iss>>buf;
+    Pate = std::stoi(buf);
+    iss>>buf;
+    FirstMove = std::stoi(buf);
+    iss>>buf;
+    Castling = std::stoi(buf);
+    iss>>buf;
+    ATTACK_COST = std::stof(buf);
+    iss>>buf;
+    worth = std::stof(buf);
+    iss>>buf;
+    this->difficulty = std::stoi(buf);
 
 }
 Move ChessBoard::getBestMove(bool white)

@@ -25,6 +25,7 @@ private:
     void printMoveCandidates(std::string start);
     void setParams();
     void printBoard();
+    void dumpCurrentGamestate();
     std::pair<int,int> transcodePosition(std::string str);
 public:
     static void toLowercase(std::string& str);

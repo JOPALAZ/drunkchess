@@ -18,10 +18,11 @@ protected:
     ChessPieceBase*** board=nullptr;
     int x=-1;
     int y=-1;
-    static char getSymb(ChessPieceCode code);
+
 
 
 public:
+    static char getSymb(ChessPieceCode code);
     void move(const std::pair<int,int>& dest);
     int getX() {return x;}
     int getY() {return y;}

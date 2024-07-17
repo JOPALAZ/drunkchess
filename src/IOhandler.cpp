@@ -166,6 +166,10 @@ void IOhandler::processInput(const std::string& response)
             ch=nullptr;
         }
     }
+    else if(response=="dump"&&gameIsOn)
+    {
+        dumpCurrentGamestate();
+    }
     else if(!gameIsOn&&response=="start")
     {
         response_ = server? "OK":"Chose a side [w/b]";
@@ -209,25 +213,7 @@ void IOhandler::processInput(const std::string& response)
     }
     else if(response=="prestart")
     {
-        if(!server) 
-            *output<<"Chose a side [w/b]"<<std::endl;
-        std::getline(*input, response_);
-        toLowercase(response_);
-        if(response_[0]=='w')
-        {
-            side = true;
-            gameIsOn=startPreDefinedGame();
-        }
-        else if(response_[0]=='b')
-        {
-            side = false;
-            gameIsOn=startPreDefinedGame();
-        }
-        else
-        {
-            if(!server)
-                *output<<"Unknown input "<<std::endl;
-        }
+        gameIsOn=startPreDefinedGame();
     }
     else if(response=="set params")
     {
@@ -245,31 +231,26 @@ void IOhandler::processInput(const std::string& response)
 
 bool IOhandler::startPreDefinedGame()
 {
+    int difficulty;
     if(ch)
     {
         delete ch;
         ch=nullptr;
     }
     checkMate={false,{},{}};
-    std::string response_;
-    int difficulty;
-    if(!server)
-        *output<<"Chose a difficulty [1-5]"<<std::endl;
-    std::getline(*input, response_);
-    toLowercase(response_);
-    difficulty = std::stoi(response_);
-    if(difficulty>=1&&difficulty<=10)
+    if(server)
     {
-        ch = new ChessBoard(log,difficulty);
-        *output<<"Give board: "<<std::endl;
-        std::getline(*input, response_);
-        ch->makeBoardFromString(response_);
-        if(!this->side)
-        {
-            ch->performMove(ch->getBestMove(!this->side),ch->getBoard());
-        }
-        printBoard();
+        *output<<"OK"<<std::endl;
     }
+    std::string response_;
+    std::getline(*input, response_);
+    difficulty = 1;
+    side = response_.back();
+    ch = new ChessBoard(log,difficulty);
+    ch->makeBoardFromString(response_);
+    difficulty = ch->getDifficulty();
+    if(!server)
+        printBoard();
     return ch!=nullptr;
 }
 std::pair<int,int> IOhandler::transcodePosition(std::string str)
@@ -312,15 +293,48 @@ bool IOhandler::startGame()
         ch = new ChessBoard(log,difficulty);
         if(ch)
         {
-            if(!this->side)
-            {
-                ch->performMove(ch->getBestMove(!this->side),ch->getBoard());
-            }
             if(!server)
                 printBoard();
         }
     }
     return ch!=nullptr;
+}
+void IOhandler::dumpCurrentGamestate()
+{
+    int i,j;
+    std::string output;
+    short a;
+    for(i=0;i<BOARDSIZE;++i)
+    {
+        for(j=0;j<BOARDSIZE;++j)
+        {
+            a = ChessPieceBase::getSymb(ch->getBoard()[i][j]->getCode());
+            a = a<<3;
+            a+=ch->getBoard()[i][j]->isWhite()<<1;
+            a+=ch->getBoard()[i][j]->hasMoved();
+            output += std::to_string(a);
+            output += ' ';
+        }
+    }
+    for(i=0;i<8;++i)
+    {
+        output += std::to_string(prices[i]);
+        output +=' ';
+    }
+    output += std::to_string(Pate);
+    output +=' ';
+    output += std::to_string(FirstMove);
+    output +=' ';
+    output += std::to_string(Castling);
+    output +=' ';
+    output += std::to_string(ATTACK_COST);
+    output +=' ';
+    output += std::to_string(worth);
+    output +=' ';
+    output += std::to_string(ch->getDifficulty());
+    output +=' ';
+    output += std::to_string(side);
+    std::cout<<output<<std::endl;
 }
 void IOhandler::setParams()
 {

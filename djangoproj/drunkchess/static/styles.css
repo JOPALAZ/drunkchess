@@ -47,6 +47,8 @@ body {
     background-color: #ff0000;
     border-radius: 50%;
     position: absolute;
+    top: 0;
+    left: 0;
     z-index: 2;
 }
 header {
@@ -177,6 +179,26 @@ header h1 {
     float: right;
     font-size: 28px;
     font-weight: bold;
+}
+.letter-horizontal, .letter-vertical {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 
+        -1px -1px 0 #000, 
+        1px -1px 0 #000, 
+        -1px 1px 0 #000, 
+        1px 1px 0 #000;
+    position: absolute;
+    z-index: 3;
+}
+.letter-horizontal {
+    right: 5px;
+    bottom: 5px;
+}
+.letter-vertical {
+    left: 5px;
+    top: 5px;
 }
 .close:hover,
 .close:focus {
