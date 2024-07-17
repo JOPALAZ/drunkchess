@@ -14,6 +14,14 @@
         let moves = 0;
         console.log("Client ID", clientId);
         let lock=false;
+        async function fetchRequest(url, options) {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return await response.json();
+        }
+
         function showMessage(message) {
             document.getElementById('messageText').innerText = message;
             document.getElementById('messageModal').style.display = 'flex';
@@ -22,163 +30,151 @@
         function closeMessage() {
             document.getElementById('messageModal').style.display = 'none';
         }
-        function showSave()
-        {
-            document.getElementById('saveText').innerText = `Your result: ${moves} moves`; 
+
+        function showSave() {
+            document.getElementById('saveText').innerText = `Your result: ${moves} moves`;
             document.getElementById('saveScoreModal').style.display = 'flex';
         }
-        function closeSave(save)
-        {
-            document.getElementById('saveScoreModal').style.display = 'none';
-            if(save != false)
-            {
-                saveData();
-            }
-        }
-        function saveData()
-        {
-            if(lock==false)
-            {
-                lock=true;
-                const Name = document.getElementById('scoreName').value;
-                fetch(`/save-score/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Client-ID': clientId,
-                            'scoreName':Name,
-                            'moves': moves,
-                            'X-CSRFToken': getCookie('csrftoken'),
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        lock=false;
-                        if(data.status!='success')
-                        {
-                            alert(data.what);
-                        }
-                    });
 
-            }
-            else
-            {
-                alert('Wasn\'t saved.')
-            }
-            
+        function closeSave(save) {
+            document.getElementById('saveScoreModal').style.display = 'none';
+            if (save) saveData();
         }
-        function enemyMove()
-        {
-            lock=true;
-            fetch(`/move-enemy/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Client-ID': clientId,
-                            'X-CSRFToken': getCookie('csrftoken'),
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        lock=false;
-                        removeCircles();
-                        startpos = [-1, -1];
-                        selectedFigure = false;
-                        if (data.status === 'success') {
-                            if(data.setup_data!='None')
-                                updateBoard(data.setup_data);
-                            if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
-                                if(String(data.special_condition).includes("WON")&&competitive)
-                                {
-                                    showSave();
-                                }
-                                showMessage(data.special_condition);
-                                gameIsOn = false
-                            }
-                        }
-                        else
-                        {
-                           console.log(data.what);
-                        }
-                    });
+
+        function showDump() {
+            document.getElementById('PredefinedModal').style.display = 'flex';
         }
-        function cellClicked(col, row) {
-            if(gameIsOn&&!lock){
-                lock=true;
+
+        function closeDump() {
+            document.getElementById('PredefinedModal').style.display = 'none';
+        }
+
+        async function saveData() {
+            if (lock) return alert('Wasn\'t saved.');
+            lock = true;
+            try {
+                const Name = document.getElementById('scoreName').value;
+                const response = await fetchRequest('/save-score/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ Name, moves })
+                });
+                lock = false;
+                if (response.status !== 'success') alert(response.what);
+            } catch (error) {
+                console.error('Error:', error);
+                lock = false;
+            }
+        }
+
+        async function enemyMove() {
+            lock = true;
+            try {
+                const data = await fetchRequest('/move-enemy/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                lock = false;
+                removeCircles();
+                startpos = [-1, -1];
+                selectedFigure = false;
+                if (data.status === 'success') {
+                    if (data.setup_data !== 'None') updateBoard(data.setup_data);
+                    if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
+                        if (String(data.special_condition).includes("WON") && competitive) showSave();
+                        showMessage(data.special_condition);
+                        gameIsOn = false;
+                    }
+                } else {
+                    console.error(data.what);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                lock = false;
+            }
+        }
+
+        async function cellClicked(col, row) {
+            if (!gameIsOn || lock) return;
+            lock = true;
+            try {
+                let data;
                 if (selectedFigure) {
-                    fetch(`/move/${startpos[0]}/${startpos[1]}/${col}/${row}/`, {
+                    data = await fetchRequest(`/move/${startpos[0]}/${startpos[1]}/${col}/${row}/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-Client-ID': clientId,
-                            'X-CSRFToken': getCookie('csrftoken'),
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        lock=false;
-                        removeCircles();
-                        startpos = [-1, -1];
-                        selectedFigure = false;
-                        if (data.status === 'success') {
-                            updateBoard(data.setup_data);
-                            moves+=1;
-                            if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
-                                showMessage(data.special_condition);
-                                gameIsOn = false
-                            }
-                            else
-                            {
-                                enemyMove();
-                            }
-                        }
-                        else
-                        {
-                           console.log(data.what);
+                            'X-CSRFToken': getCookie('csrftoken')
                         }
                     });
                 } else {
-                    fetch(`/cell-clicked-first/${col}/${row}/`, {
+                    data = await fetchRequest(`/cell-clicked-first/${col}/${row}/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-Client-ID': clientId,
-                            'X-CSRFToken': getCookie('csrftoken'),
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        lock=false;
-                        startpos = [col, row];
-                        selectedFigure = true;
-                        removeCircles();
-                        fillCirles(data.candidates);
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
                     });
                 }
+                lock = false;
+                removeCircles();
+                startpos = selectedFigure ? [-1, -1] : [col, row];
+                selectedFigure = !selectedFigure;
+                if (data.status === 'success') {
+                    if (selectedFigure) fillCirles(data.candidates);
+                    else {
+                        updateBoard(data.setup_data);
+                        moves += 1;
+                        if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
+                            showMessage(data.special_condition);
+                            gameIsOn = false;
+                        } else {
+                            enemyMove();
+                        }
+                    }
+                } else {
+                    console.error(data.what);
+                }
+            } catch (error) {
+                removeCircles();
+                startpos = [-1, -1];
+                selectedFigure = false;
+                console.error('Error:', error);
+                lock = false;
             }
         }
-        function flipBoard(black)
-        {
-            const letters = ['A','B','C','D','E','F','G','H'];
-            for (let i = black * 7; i >= 0 && i < 8; i += 1 - 2 * black) {
-                var el1 = document.getElementById(`cell-0-${i}`);
-                var el2 = document.getElementById(`cell-${i}-0`);
-                
+
+        function flipBoard(black) {
+            let letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+            if (black) letters.reverse();
+            for (let i = 0; i < 8; i++) {
+                const el1 = document.getElementById(`cell-0-${i}`);
+                const el2 = document.getElementById(`cell-${i}-0`);
                 if (el1) {
                     const hor = document.createElement('span');
                     hor.className = 'letter-horizontal';
                     hor.textContent = letters[i];
                     el1.appendChild(hor);
                 }
-
                 if (el2) {
                     const vert = document.createElement('span');
                     vert.className = 'letter-vertical';
-                    vert.textContent = i + 1;
+                    vert.textContent = black ? 8 - i : i + 1;
                     el2.appendChild(vert);
                 }
             }
         }
+
         function fillCirles(points) {
             points.forEach(piece => {
                 if (piece !== "NONE") {
@@ -194,101 +190,112 @@
         }
 
         function removeCircles() {
-            const circles = document.querySelectorAll('.chess-board .circle');
-            circles.forEach(circle => {
-                circle.remove();
-            });
+            document.querySelectorAll('.chess-board .circle').forEach(circle => circle.remove());
         }
 
         function resetIdle() {
-            fetch(`/reset-idle/`, {
+            fetch('/reset-idle/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Client-ID': clientId,
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-            })
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
         }
-        function startGame() {
-            if(lock==false)
-            { lock=true;
-                clearBoard();
-                document.getElementById('settingsButton').disabled = false;
-                document.getElementById('settingsButton').style.display='flex';
-                competitive=false;
-                moves = 0;
-                const difficulty = document.getElementById('difficulty').value;
-                const side = document.getElementById('side').value;
-                flipBoard(side=='black'? 1:0);
-                fetch(`/start-game/${difficulty}/${side}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Client-ID': clientId,
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    lock=false;
-                    if (data.status === 'success') {
-                        updateBoard(data.setup_data);
-                        if(side==='black')
-                        {
-                            enemyMove();
-                        }
-                        gameIsOn = true;
-                    } else {
-                        removeCircles();
-                        startpos = [-1, -1];
-                        selectedFigure = false;
-                    }
-                });
-            }
-            
-        }
-        function startCompetitive()
-        {
-            if(lock==false)
-            {
-                competitive=true;
-                lock=true;
-                clearBoard();
-                document.getElementById('settingsButton').disabled = true;
-                document.getElementById('settingsButton').style.display='none';
-                moves = 0;
-                const difficulty = 10;
-                const side = Math.floor(Math.random()*2)==1? 'black':'white';
-                flipBoard(side=='black'? 1:0);
-                setDefaultSettings();
-                fetch(`/start-game/${difficulty}/${side}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Client-ID': clientId,
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    lock=false;
-                    if (data.status === 'success') {
-                        updateBoard(data.setup_data);
-                        if(side==='black')
-                        {
-                            enemyMove();
-                        }
-                        else
-                        gameIsOn = true;
-                    } else {
-                        removeCircles();
-                        startpos = [-1, -1];
-                        selectedFigure = false;
-                    }
-                });
 
+        async function startGame() {
+            if (lock) return;
+            lock = true;
+            clearBoard();
+            document.getElementById('settingsButton').disabled = false;
+            document.getElementById('settingsButton').style.display = 'flex';
+            competitive = false;
+            moves = 0;
+            const difficulty = document.getElementById('difficulty').value;
+            const side = document.getElementById('side').value;
+            flipBoard(side === 'black');
+            try {
+                const data = await fetchRequest(`/start-game/${difficulty}/${side}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                lock = false;
+                if (data.status === 'success') {
+                    updateBoard(data.setup_data);
+                    if (side === 'black') enemyMove();
+                    gameIsOn = true;
+                } else {
+                    removeCircles();
+                    startpos = [-1, -1];
+                    selectedFigure = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                lock = false;
             }
+        }
+
+        async function startCompetitive()
+        {
+            if (lock) return;
+            lock = true;
+            clearBoard();
+            document.getElementById('settingsButton').disabled = false;
+            document.getElementById('settingsButton').style.display = 'flex';
+            competitive = true;
+            moves = 0;
+            const difficulty = 10;
+            const side =  Math.floor(Math.random()*2)==1? 'black':'white';;
+            flipBoard(side === 'black');
+            try {
+                const data = await fetchRequest(`/start-game/${difficulty}/${side}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                lock = false;
+                if (data.status === 'success') {
+                    updateBoard(data.setup_data);
+                    if (side === 'black') enemyMove();
+                    gameIsOn = true;
+                } else {
+                    removeCircles();
+                    startpos = [-1, -1];
+                    selectedFigure = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                lock = false;
+            }
+        }
+        function setPredifinedParams(params)
+        {
+            document.getElementById('priceKing').value=params[0];
+            document.getElementById('priceQueen').value=params[1];
+            document.getElementById('priceRook').value=params[2];
+            document.getElementById('priceBishop').value=params[3];
+            document.getElementById('priceKnight').value=params[4];
+            document.getElementById('pricePawn').value=params[5];
+            document.getElementById('priceEmpty').value=params[6];
+            document.getElementById('pricePate').value=params[8];
+            document.getElementById('priceMate').value=params[9];
+            document.getElementById('priceFirstMove').value=params[10];
+            document.getElementById('priceCastling').value=params[11];
+            document.getElementById('attackCost').value=params[12];
+            document.getElementById('worth').value=params[13];
+            document.getElementById('difficulty').value = params[14]
+            document.getElementById('side').value = params[15]==1? 'white':'black';
+            clearBoard();
+            flipBoard(params[15]==0);
+            saveSettings();
         }
         function setDefaultSettings()
         {
@@ -301,8 +308,8 @@
             document.getElementById('priceKing').value=1100;
             document.getElementById('priceMate').value=-999999;
             document.getElementById('pricePate').value=0;
-            document.getElementById('priceFirstMove').value=50;
-            document.getElementById('priceCastling').value=1;
+            document.getElementById('priceFirstMove').value=1;
+            document.getElementById('priceCastling').value=50;
             document.getElementById('attackCost').value=0.05;
             document.getElementById('worth').value=0.9;
             saveSettings();
@@ -321,33 +328,80 @@
             }
             return cookieValue;
         }
-        async function dump() {
-            try {
-                const response = await fetch('/dump/', {
+        function uploadFile() {
+            if(lock==false)
+            {
+                lock=true;
+                const fileInput = document.getElementById('file-input');
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+                fetch('/upload/', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-Client-ID': clientId,
                         'X-CSRFToken': getCookie('csrftoken'),
                     },
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('settingsButton').disabled = false;
+                    document.getElementById('settingsButton').style.display='flex';
+                    competitive=false;
+                    moves = 0;
+                    setPredifinedParams(data.params);
+                    updateBoard(data.setup_data);
+                    closeDump();
+                    document.getElementById('file-input').value = '';
+                    gameIsOn=true;
+                    lock=false;
+                })
+                .catch(error => {
+                    alert('Upload failed');
+                    document.getElementById('file-input').value = '';
+                    console.error('Error:', error);
+                    clearBoard();
+                    startpos = [-1, -1];
+                    selectedFigure = false;
+                    lock=false;
                 });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'gameSituationDump.inta';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-            } catch (error) {
-                console.error('Couldn\'t dump:', error);
             }
+        }
+        async function dump() {
+            if(lock==false&&gameIsOn)
+            {
+                lock=true;
+                try {
+                    const response = await fetch('/dump/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Client-ID': clientId,
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'gameSituationDump.inta';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                } catch (error) {
+                    console.error('Couldn\'t dump:', error);
+                }
+                lock=false;
+            }
+            
         }
         function clearBoard()
         {
@@ -506,8 +560,7 @@
                 </select>
                 <button onclick="startGame()">Start</button>
                 <button onclick="startCompetitive()">Start Competitive</button>
-                <button onclick="dump()">SaveGameState</button>
-                <button onclick="">Set Defaults</button>
+                <button onclick="showDump()">Predefined Game</button>
             </div>
         </div>
     </div>
@@ -567,6 +620,18 @@
             <span class="close" onclick="closeMessage()">&times;</span>
             <p id="messageText"></p>
             
+        </div>
+    </div>
+    <div id="PredefinedModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDump()">&times;</span>
+            <div class="options">
+                <input type="file" id="file-input" name="file">
+                <div>
+                    <button onclick="dump()">Download</button>
+                    <button type="button" onclick="uploadFile()">Upload</button>
+                </div>
+            </div>
         </div>
     </div>
 </body>

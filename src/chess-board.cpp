@@ -298,6 +298,8 @@ void ChessBoard::makeBoardFromString(const std::string& str)
         prices[i] = stoi(buf);
     }
     iss>>buf;
+    Mate = std::stoi(buf);
+    iss>>buf;
     Pate = std::stoi(buf);
     iss>>buf;
     FirstMove = std::stoi(buf);

@@ -245,7 +245,7 @@ bool IOhandler::startPreDefinedGame()
     std::string response_;
     std::getline(*input, response_);
     difficulty = 1;
-    side = response_.back();
+    side = response_.back() - '0';
     ch = new ChessBoard(log,difficulty);
     ch->makeBoardFromString(response_);
     difficulty = ch->getDifficulty();
@@ -304,9 +304,9 @@ void IOhandler::dumpCurrentGamestate()
     int i,j;
     std::string output;
     short a;
-    for(i=0;i<BOARDSIZE;++i)
+    for(i=0; i<BOARDSIZE; ++i)
     {
-        for(j=0;j<BOARDSIZE;++j)
+        for(j=0; j<BOARDSIZE; ++j)
         {
             a = ChessPieceBase::getSymb(ch->getBoard()[i][j]->getCode());
             a = a<<3;
@@ -322,6 +322,8 @@ void IOhandler::dumpCurrentGamestate()
         output +=' ';
     }
     output += std::to_string(Pate);
+    output +=' ';
+    output += std::to_string(Mate);
     output +=' ';
     output += std::to_string(FirstMove);
     output +=' ';

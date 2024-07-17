@@ -12,5 +12,6 @@ urlpatterns = [
     path('move-enemy/',views.move_enemy,name="move_enemy"),
     path('save-score/',views.save_result,name="save_result"),
     path('dump/',views.dump,name="dump"),
+    path('upload/',views.upload,name="upload"),
     path('stop/',views.stop_client,name="stop_client")
 ]
