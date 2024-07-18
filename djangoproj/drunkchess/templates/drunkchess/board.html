@@ -84,9 +84,10 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Client-ID': clientId,
+                        'scoreName': Name,
+                        'moves': moves,
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: JSON.stringify({ Name, moves })
                 });
                 lock = false;
                 if (response.status !== 'success') alert(response.what);
