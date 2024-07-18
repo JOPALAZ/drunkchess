@@ -20,6 +20,7 @@ protected:
 
 public:
   static char getSymb(ChessPieceCode code);
+  static ChessPieceCode getPieceCode(char chr);
   void move(const std::pair<int, int> &dest);
   int getX() { return x; }
   int getY() { return y; }

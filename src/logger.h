@@ -4,11 +4,12 @@
 #include <ctime>
 #include <iostream>
 #include <memory>
+struct Move;
 class Logger {
 private:
   bool silent;
   std::ostream *destination;
-  bool isOK;
+  bool isOK=true;
 
 public:
   Logger(bool silent, std::ostream *destination);
@@ -27,5 +28,6 @@ public:
       }
     }
   }
+  static std::string moveToString(Move mv);
   ~Logger();
 };

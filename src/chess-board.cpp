@@ -1,4 +1,5 @@
 #include "chess-board.h"
+#include "IOhandler.h"
 static int debugCounter = 0;
 
 std::vector<std::pair<int, int>>
@@ -151,7 +152,8 @@ ChessBoard::ChessBoard(Logger *log, int difficulty)
   for (i = 2; i < 6; i++) {
     board[i] = createEmptyRow(i);
   }
-  log->log("ДОСКА СОЗДАЛАСЬ ЕПТА!!!");
+  if(log!=nullptr)
+    log->log("BOARD CREATED");
   // auto test = getDangerousPoints(board, false);
 }
 ChessPieceBase **ChessBoard::createEmptyRow(int row) {
@@ -311,7 +313,7 @@ Move ChessBoard::getBestMove(bool white) {
           }
           for (std::pair<int, int> el : buf) {
             revertBoard(imaginaryBoard, board);
-            dScore = performMove(Move{{i, j}, el}, imaginaryBoard, true);
+            dScore = performMove(Move{{i, j}, el}, imaginaryBoard,nullptr, true);
             if (out.size() == 0) {
               out.push_back({Move{{i, j}, el}, dScore});
             } else {
@@ -343,11 +345,15 @@ Move ChessBoard::getBestMove(bool white) {
     if (param) {
       param->board = copyBoard(board);
       param->score = out.at(i).dScore;
-      performMove(out.at(i).move, param->board, true);
+      performMove(out.at(i).move, param->board,nullptr, true);
       param->difficulty = difficulty;
       param->maxDepth = maxDepth;
       param->white = white;
       param->ready = false;
+      if(log)
+      {
+        log->log("THREAD " + std::to_string(i) + " STARTED");
+      }
     } else {
       throw std::runtime_error("NOT ENOUGHT MEMORY");
     }
@@ -357,10 +363,10 @@ Move ChessBoard::getBestMove(bool white) {
   }
   for (i = 0; i < out.size() && maxDepth > 0; ++i) {
     if (params[i]->ready) {
-      // std::cout<<out.at(i).dScore<<" -
-      // "<<params[i]->score<<'('<<out.at(i).dScore-params[i]->score<<')'<<" PTS
-      // FROM "<<out.at(i).move.start.second<<out.at(i).move.start.first<<" to
-      // "<<out.at(i).move.end.second<<out.at(i).move.end.first<<std::endl;
+      if(log)
+      {
+        log->log("THREAD " + std::to_string(i) + " FINISHED WITH SCORE: "+std::to_string(out.at(i).dScore - params[i]->score));
+      }
       if (i == 0) {
         maxScore = out.at(i).dScore - params[i]->score;
         j = 0;
@@ -396,7 +402,11 @@ Move ChessBoard::getBestMove(bool white) {
     return {{-1, -1}, {-1, -1}};
   }
 }
-ChessPieceCode ChessBoard::askReplacement() { return QUEEN; }
+ChessPieceCode ChessBoard::askReplacement(bool side,IOhandler* handler)
+{
+  if(handler==nullptr) return QUEEN;
+  return handler->askReplacement(side);
+}
 std::vector<std::pair<int, int>>
 ChessBoard::filterMoves(const std::vector<std::pair<int, int>> &input,
                         Special_Parameter checkMate, int usedIndex) {
@@ -455,7 +465,7 @@ const float ChessBoard::recursiveSubroutine(ChessPieceBase ***board, bool white,
           }
           for (std::pair<int, int> el : buf) {
             revertBoard(imaginaryBoard, board);
-            dScore = performMove(Move{{i, j}, el}, imaginaryBoard, true);
+            dScore = performMove(Move{{i, j}, el}, imaginaryBoard,nullptr, true);
 
             if (out.size() == 0) {
               out.push_back({Move{{i, j}, el}, dScore});
@@ -494,7 +504,7 @@ const float ChessBoard::recursiveSubroutine(ChessPieceBase ***board, bool white,
   } else {
     for (i = 0; i < out.size(); ++i) {
       revertBoard(imaginaryBoard, board);
-      performMove(out.at(i).move, imaginaryBoard, true);
+      performMove(out.at(i).move, imaginaryBoard,nullptr, true);
       if (i == 0) {
         maxScore =
             out.at(i).dScore -
@@ -520,7 +530,7 @@ const float ChessBoard::recursiveSubroutine(ChessPieceBase ***board, bool white,
   }
 }
 float ChessBoard::performMove(const Move &move, ChessPieceBase ***board,
-                              bool overrideRightess = false) {
+                              IOhandler* handler,bool overrideRightess = false) {
   ChessPieceBase *buf;
   float score;
   std::pair<int, int> bufMoveKing;
@@ -530,8 +540,6 @@ float ChessBoard::performMove(const Move &move, ChessPieceBase ***board,
     if (board[move.end.first][move.end.second]->getCode() == KING &&
         board[move.start.first][move.start.second]->isWhite() !=
             board[move.end.first][move.end.second]->isWhite()) {
-      // printImaginaryBoard(board);
-      // std::cout<<move.start.second<<"\t"<<move.start.first<<std::endl;
       throw std::runtime_error("CANNOT ATTACK KING");
     }
     if (overrideRightess) {
@@ -547,7 +555,7 @@ float ChessBoard::performMove(const Move &move, ChessPieceBase ***board,
         if (board[move.start.first][move.start.second]->getCode() == PAWN &&
             move.end.first ==
                 7 * board[move.start.first][move.start.second]->isWhite()) {
-          code = askReplacement();
+          code = askReplacement(board[move.start.first][move.start.second]->isWhite(),handler);
           buf = createPeice(
               move.end.second, move.end.first,
               board[move.start.first][move.start.second]->isWhite(), code,
@@ -587,7 +595,7 @@ float ChessBoard::performMove(const Move &move, ChessPieceBase ***board,
           if (board[move.start.first][move.start.second]->getCode() == PAWN &&
               move.end.first ==
                   7 * board[move.start.first][move.start.second]->isWhite()) {
-            code = askReplacement();
+            code = askReplacement(board[move.start.first][move.start.second]->isWhite(),handler);
             buf = createPeice(
                 move.end.second, move.end.first,
                 board[move.end.first][move.end.second]->isWhite(), code,
@@ -644,8 +652,8 @@ float ChessBoard::performMove(const Move &move, ChessPieceBase ***board,
             bufMoveKing = {move.start.first + 2 - 4 * move.start.first == 7,
                            move.start.second};
           }
-          performMove({move.end, bufMoveRook}, board, true);
-          performMove({move.start, bufMoveKing}, board, true);
+          performMove({move.end, bufMoveRook}, board,handler, true);
+          performMove({move.start, bufMoveKing}, board,handler, true);
           for (std::pair<int, int> coord :
                board[bufMoveKing.first][bufMoveKing.second]
                    ->getAttackCandidates(true)) {
@@ -673,7 +681,7 @@ float ChessBoard::performMove(const Move &move, ChessPieceBase ***board,
         if (board[move.start.first][move.start.second]->getCode() == PAWN &&
             move.end.first ==
                 7 * board[move.start.first][move.start.second]->isWhite()) {
-          code = askReplacement();
+          code = askReplacement(board[move.start.first][move.start.second]->isWhite(),handler);
           buf = createPeice(
               move.end.second, move.end.first,
               board[move.start.first][move.start.second]->isWhite(), code,
@@ -715,7 +723,7 @@ float ChessBoard::performMove(const Move &move, ChessPieceBase ***board,
           if (board[move.start.first][move.start.second]->getCode() == PAWN &&
               move.end.first ==
                   7 * board[move.start.first][move.start.second]->isWhite()) {
-            code = askReplacement();
+            code = askReplacement(board[move.start.first][move.start.second]->isWhite(),handler);
             buf = createPeice(
                 move.end.second, move.end.first,
                 board[move.end.first][move.end.second]->isWhite(), code,
@@ -772,8 +780,8 @@ float ChessBoard::performMove(const Move &move, ChessPieceBase ***board,
             bufMoveKing = {move.start.first + 2 - 4 * move.start.first == 7,
                            move.start.second};
           }
-          performMove({move.end, bufMoveRook}, board, true);
-          performMove({move.start, bufMoveKing}, board, true);
+          performMove({move.end, bufMoveRook}, board, handler, true);
+          performMove({move.start, bufMoveKing}, board, handler, true);
           for (std::pair<int, int> coord :
                board[bufMoveKing.first][bufMoveKing.second]
                    ->getAttackCandidates(true)) {
@@ -1054,4 +1062,9 @@ Special_Parameter ChessBoard::evaluateCheckMate(bool side,
   return out;
 }
 
-ChessBoard::~ChessBoard() {}
+ChessBoard::~ChessBoard()
+{
+  deleteBoard(this->board);
+  if (log)
+    this->log->log("BOARD DELETED");
+}

@@ -50,6 +50,36 @@ char ChessPieceBase::getSymb(ChessPieceCode code) {
     break;
   }
 }
+
+ChessPieceCode ChessPieceBase::getPieceCode(char chr) {
+  switch (chr) {
+  case '0':
+    return EMPTY;
+    break;
+  case 'P':
+    return PAWN;
+    break;
+  case 'R':
+    return ROOK;
+    break;
+  case 'H':
+    return KNIGHT;
+    break;
+  case 'B':
+    return BISHOP;
+    break;
+  case 'Q':
+    return QUEEN;
+    break;
+  case 'K':
+    return KING;
+    break;
+  default:
+    return NONE; 
+    break;
+  }
+}
+
 std::string ChessPieceBase::print() {
   std::string out;
   out += white ? "W" : "B";
@@ -84,7 +114,7 @@ ChessPieceEmpty::ChessPieceEmpty(int x, int y, Logger *log,
   this->code = EMPTY;
   this->board = board;
   if (log)
-    log->log("ПУСТОЙ КУСОК БЫЛ ВУПУКАН!!!!");
+    log->log("EMPTY PIECE CREATED");
 }
 std::vector<std::pair<int, int>> ChessPieceEmpty::getMoveCandidates() {
   return {};
@@ -106,7 +136,7 @@ void ChessPieceBase::move(const std::pair<int, int> &dest) {
 }
 ChessPieceEmpty::~ChessPieceEmpty() {
   if (log)
-    this->log->log("ПУСТОЙ ПУКАН БЫЛ ПРОПУКАН");
+    this->log->log("EMPTY PIECE DELETED");
 }
 
 ChessPiecePawn::ChessPiecePawn(int x, int y, bool color, Logger *log,
@@ -120,7 +150,7 @@ ChessPiecePawn::ChessPiecePawn(int x, int y, bool color, Logger *log,
   this->playable = true;
   this->moved = moved_;
   if (log)
-    log->log("ГВИТНИК НАРОДИВСЯ!!!!!!!");
+    log->log("PAWN CREATED");
 }
 std::vector<std::pair<int, int>> ChessPiecePawn::getMoveCandidates() {
   std::vector<std::pair<int, int>> out = {};
@@ -154,6 +184,12 @@ std::vector<std::pair<int, int>> ChessPiecePawn::getAttackCandidates(bool all) {
   return out;
 }
 
+ChessPiecePawn::~ChessPiecePawn()
+{
+  if (log)
+    this->log->log("PAWN DELETED");
+}
+
 ChessPieceKnight::ChessPieceKnight(int x, int y, bool color, Logger *log,
                                    ChessPieceBase ***board,
                                    bool moved_ = false) {
@@ -166,7 +202,7 @@ ChessPieceKnight::ChessPieceKnight(int x, int y, bool color, Logger *log,
   this->playable = true;
   this->moved = moved_;
   if (log)
-    log->log("КОНЬ ВЫСРАЛСЯ!!!");
+    log->log("KNIGHT CREATED");
 }
 std::vector<std::pair<int, int>> ChessPieceKnight::getMoveCandidates() {
   std::vector<std::pair<int, int>> out;
@@ -215,6 +251,11 @@ ChessPieceKnight::getAttackCandidates(bool all) {
   }
   return out;
 }
+ChessPieceKnight::~ChessPieceKnight()
+{
+  if (log)
+    this->log->log("KNIGHT DELETED");
+}
 
 ChessPieceRook::ChessPieceRook(int x, int y, bool color, Logger *log,
                                ChessPieceBase ***board, bool moved_ = false) {
@@ -226,6 +267,8 @@ ChessPieceRook::ChessPieceRook(int x, int y, bool color, Logger *log,
   this->white = color;
   this->playable = true;
   this->moved = moved_;
+  if (log)
+    this->log->log("ROOK CREATED");
 }
 std::vector<std::pair<int, int>> ChessPieceRook::getMoveCandidates() {
   int i, j, k;
@@ -279,7 +322,11 @@ std::vector<std::pair<int, int>> ChessPieceRook::getAttackCandidates(bool all) {
   }
   return out;
 }
-
+ChessPieceRook::~ChessPieceRook()
+{
+  if (log)
+    this->log->log("ROOK DELETED");
+}
 ChessPieceBishop::ChessPieceBishop(int x, int y, bool color, Logger *log,
                                    ChessPieceBase ***board,
                                    bool moved_ = false) {
@@ -291,6 +338,8 @@ ChessPieceBishop::ChessPieceBishop(int x, int y, bool color, Logger *log,
   this->white = color;
   this->playable = true;
   this->moved = moved_;
+  if (log)
+    this->log->log("BISHOP CREATED");
 }
 std::vector<std::pair<int, int>> ChessPieceBishop::getMoveCandidates() {
   std::vector<std::pair<int, int>> out;
@@ -381,6 +430,13 @@ ChessPieceBishop::getAttackCandidates(bool all) {
   return out;
 }
 
+ChessPieceBishop::~ChessPieceBishop()
+{
+  if (log)
+    this->log->log("BISHOP DELETED");
+}
+
+
 ChessPieceQueen::ChessPieceQueen(int x, int y, bool color, Logger *log,
                                  ChessPieceBase ***board, bool moved_ = false) {
   this->log = log;
@@ -391,6 +447,8 @@ ChessPieceQueen::ChessPieceQueen(int x, int y, bool color, Logger *log,
   this->white = color;
   this->playable = true;
   this->moved = moved_;
+  if (log)
+    this->log->log("QUEEN CREATED");
 }
 std::vector<std::pair<int, int>> ChessPieceQueen::getMoveCandidates() {
   std::vector<std::pair<int, int>> out;
@@ -523,6 +581,12 @@ ChessPieceQueen::getAttackCandidates(bool all) {
   return out;
 }
 
+ChessPieceQueen::~ChessPieceQueen()
+{
+  if (log)
+    this->log->log("QUEEN DELETED");
+}
+
 ChessPeiceKing::ChessPeiceKing(int x, int y, bool color, Logger *log,
                                ChessPieceBase ***board, bool moved_ = false) {
   this->log = log;
@@ -533,6 +597,8 @@ ChessPeiceKing::ChessPeiceKing(int x, int y, bool color, Logger *log,
   this->white = color;
   this->playable = true;
   this->moved = moved_;
+  if (log)
+    this->log->log("KING CREATED");
 }
 bool canCastle(ChessPeiceKing *king, int direction) {
   ChessPieceBase ***board = king->getBoard();
@@ -639,4 +705,9 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all) {
   }
 
   return out;
+}
+ChessPeiceKing::~ChessPeiceKing()
+{
+  if (log)
+    this->log->log("KING DELETED");
 }

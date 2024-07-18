@@ -6,11 +6,11 @@
 #include <vector>
 class IOhandler {
 private:
-  Logger *log = nullptr;
-  ChessBoard *ch = nullptr;
+  Logger *log;
+  ChessBoard *ch;
   std::ostream *output;
   std::istream *input;
-  Special_Parameter checkMate = {false, {}, {}};
+  Special_Parameter checkMate;
   bool gameIsOn = false;
   bool loop = true;
   bool server = false;
@@ -29,6 +29,7 @@ private:
 
 public:
   static void toLowercase(std::string &str);
+  ChessPieceCode askReplacement(bool side);
   void mainLoop();
   IOhandler(std::ostream *output, std::istream *input);
   IOhandler();

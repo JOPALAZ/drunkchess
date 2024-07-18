@@ -164,14 +164,26 @@ def move(request, startX, startY, endX, endY):
     
     if response.startswith('NOT OK'):
         return JsonResponse({'status': 'error', 'what': response.split('|')[1]}, status=400)
-    
-    if response != "OK":
+    elif response == "CODE?":
+        return JsonResponse({'status': 'success', 'setup_data': 'NONE', 'special_condition': response})
+    elif response != "OK":
         setup_data = parse_setup_data(read_last_output(client_data.cserver))
         read_last_output(client_data.cserver)
         client_data.started = False
     else:
         setup_data = get_setup_data(client_data.cserver)
     
+    return JsonResponse({'status': 'success', 'setup_data': setup_data, 'special_condition': response})
+
+def set_substitute(request):
+    client_id = get_client_id(request)
+    if not client_id or client_id not in clients:
+        return JsonResponse({'status': 'error'}, status=400)
+    
+    client_data = clients[client_id]
+    send_command_to_server(client_data.cserver, request.headers.get('Substitute'))
+    response = read_last_output(client_data.cserver)
+    setup_data = get_setup_data(client_data.cserver)
     return JsonResponse({'status': 'success', 'setup_data': setup_data, 'special_condition': response})
 
 def save_result(request):

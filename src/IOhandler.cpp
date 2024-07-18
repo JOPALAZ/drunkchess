@@ -1,5 +1,6 @@
 #include "IOhandler.h"
 #include "chess-peice-codes.h"
+#include <unistd.h>
 int patOrMate(bool side, ChessPieceBase ***board,
               Special_Parameter &checkMate) {
   int i, j, id;
@@ -32,6 +33,9 @@ void IOhandler::toLowercase(std::string &str) {
 }
 IOhandler::IOhandler(std::ostream *output, std::istream *input)
     : output(output), input(input) {
+  checkMate={false,{},{}};
+  log=nullptr;
+  ch=nullptr;
   std::string response;
   std::ostream *out = nullptr;
   bool silent;
@@ -40,7 +44,8 @@ IOhandler::IOhandler(std::ostream *output, std::istream *input)
   silent = response.empty() || response[0] == 'N' || response[0] == 'n';
   if (!silent && response[0] == 'S') {
     server = true;
-    silent = true;
+    out =new std::ofstream(std::to_string(getpid())+".log", std::ofstream::out | std::ofstream::app);
+    silent = false;
   } else if (!silent) {
     *output << "Where do you want to log? [standart/file] " << std::endl;
     std::getline(*input, response);
@@ -159,6 +164,10 @@ void IOhandler::processInput(const std::string &response) {
       delete ch;
       ch = nullptr;
     }
+    if(log)
+    {
+      log->log("PLAYER SURRENDERED");
+    }
     *output << "You lost!!!" << std::endl;
     checkMate = {false, {}, {}};
     gameIsOn = false;
@@ -192,6 +201,11 @@ bool IOhandler::startPreDefinedGame() {
   difficulty = ch->getDifficulty();
   if (!server)
     printBoard();
+  if(log)
+  {
+    response_ = side? "WHITE":"BLACK";
+    log->log("PREDEFINED GAME STARTED WITH DIFFICULTY " + std::to_string(difficulty) + " AND PLAYER IS " + response_);
+  }
   return ch != nullptr;
 }
 std::pair<int, int> IOhandler::transcodePosition(std::string str) {
@@ -229,6 +243,11 @@ bool IOhandler::startGame() {
       if (!server)
         printBoard();
     }
+  }
+  if(log)
+  {
+    response_ = side? "WHITE":"BLACK";
+    log->log("GAME STARTED WITH DIFFICULTY " + std::to_string(difficulty) + "AND PLAYER IS " + response_);
   }
   return ch != nullptr;
 }
@@ -334,9 +353,21 @@ void IOhandler::move(const std::string &move) {
         if (ChessBoard::simplifiedEvaluateCheckMate(
                 !this->side, ChessBoard::findKing(!this->side, ch->getBoard()),
                 ch->getBoard()))
+        {
+          if(log)
+          {
+            log->log("COMPUTER LOST");
+          }
           *output << "YOU WON!!!" << std::endl;
+        }
         else
+        {
+          if(log)
+          {
+            log->log("TIE");
+          }
           *output << "TIE!!!" << std::endl;
+        }
         printBoard();
         if (ch) {
           delete ch;
@@ -346,11 +377,23 @@ void IOhandler::move(const std::string &move) {
         gameIsOn = false;
         return;
       }
-      ch->performMove(bestMove, ch->getBoard());
+      ch->performMove(bestMove, ch->getBoard(),nullptr,true);
+      if(log)
+      {
+        log->log("COMPUTER MOVED: "+Logger::moveToString(bestMove));
+      }
       id = patOrMate(side, ch->getBoard(), checkMate);
       if (id == -1) {
+        if(log)
+        {
+          log->log("PLAYER LOST");
+        }
         *output << "YOU LOST!!!" << std::endl;
       } else if (id == 0) {
+        if(log)
+        {
+          log->log("TIE");
+        }
         *output << "TIE!!!" << std::endl;
       }
       if (id != 1) {
@@ -365,6 +408,10 @@ void IOhandler::move(const std::string &move) {
       }
     } catch (...) {
 
+      if(log)
+      {
+        log->log("COMPUTER DECIDED TO SURRENDER");
+      }
       *output << "ENEMY DECIDED TO SURRENDER -> YOU WON!!!" << std::endl;
       printBoard();
       if (ch) {
@@ -402,13 +449,51 @@ void IOhandler::move(const std::string &move) {
     }
     if (isGood ||
         ch->getBoard()[mv.start.first][mv.start.second]->getCode() == KING)
-      ch->performMove(mv, ch->getBoard());
+    {
+      try
+      {
+        ch->performMove(mv, ch->getBoard(),this);
+        if(log)
+          log->log("PLAYER MOVED: " + Logger::moveToString(mv));
+        if(!server)
+        {
+          this->move("enemy");
+        }
+      }
+      catch(std::logic_error& le)
+      {
+        throw std::logic_error("YOU CAN'T MOVE THERE");
+      }
+    }
     else
       throw std::logic_error("CANT MOVE THERE, KING IS ATTACKED");
   } else {
     throw std::logic_error("YOU CAN'T MOVE THAT FIGURE");
   }
 }
+
+ChessPieceCode IOhandler::askReplacement(bool side)
+{
+  std::string response;
+  ChessPieceCode code;
+  if(side==this->side)
+  {
+    *output<<"CODE?"<<std::endl;
+    std::getline(*input,response);
+    code = ChessPieceBase::getPieceCode(response[0]);
+    if(code==NONE)
+    {
+      code=QUEEN;
+    }
+  }
+  else
+  {
+    code=QUEEN;
+  }
+  return code;
+
+}
+
 void IOhandler::printMoveCandidates(std::string start) {
   std::pair<int, int> pos = transcodePosition(start);
   std::vector<std::pair<int, int>> buf =
@@ -465,4 +550,12 @@ void IOhandler::printBoard() {
 IOhandler::IOhandler() : output(&std::cout), input(&std::cin) {
   log = new Logger(true, nullptr);
 }
-IOhandler::~IOhandler() {}
+IOhandler::~IOhandler()
+{
+  if(log)
+    delete log;
+  if(ch)
+  {
+    delete ch;
+  }
+}

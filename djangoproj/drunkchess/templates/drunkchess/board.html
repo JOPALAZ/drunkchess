@@ -49,6 +49,31 @@
             document.getElementById('PredefinedModal').style.display = 'none';
         }
 
+        function showChangePawn()
+        {
+            document.getElementById('PawnChangeModal').style.display = 'flex';
+        }
+       async function closeChangePawn(what)
+        {
+            document.getElementById('PawnChangeModal').style.display = 'none';
+            try {
+                const response = await fetchRequest('/set-substitute/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Client-ID': clientId,
+                        'Substitute': what,
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                });
+                updateBoard(response.setup_data);
+                enemyMove();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+
         async function saveData() {
             if (lock) return alert('Wasn\'t saved.');
             lock = true;
@@ -66,6 +91,8 @@
                 lock = false;
                 if (response.status !== 'success') alert(response.what);
             } catch (error) {
+                gameIsOn=false;
+                clearBoard();
                 console.error('Error:', error);
                 lock = false;
             }
@@ -126,22 +153,30 @@
                         }
                     });
                 }
-                lock = false;
                 removeCircles();
                 startpos = selectedFigure ? [-1, -1] : [col, row];
                 selectedFigure = !selectedFigure;
                 if (data.status === 'success') {
                     if (selectedFigure) fillCirles(data.candidates);
                     else {
-                        updateBoard(data.setup_data);
                         moves += 1;
                         if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
-                            showMessage(data.special_condition);
-                            gameIsOn = false;
+                            if(data.special_condition==='CODE?')
+                            {
+                                showChangePawn();
+                            }
+                            else
+                            {
+                                showMessage(data.special_condition);
+                                gameIsOn = false;   
+                            }
+                            
                         } else {
+                            updateBoard(data.setup_data);
                             enemyMove();
                         }
                     }
+                    lock = false;
                 } else {
                     console.error(data.what);
                 }
@@ -153,7 +188,6 @@
                 lock = false;
             }
         }
-
         function flipBoard(black) {
             let letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
             if (black) letters.reverse();
@@ -630,6 +664,21 @@
                     <button onclick="dump()">Download</button>
                     <button type="button" onclick="uploadFile()">Upload</button>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div id="PawnChangeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChangePawn('Q')">&times;</span>
+            <div class="options">
+                <p>Choose figure you want to substitute.</p>
+                <select id="substitute" name="substitute" value="Q">
+                    <option value="Q">Queen</option>
+                    <option value="B">Bishop</option>
+                    <option value="R">Rook</option>
+                    <option value="H">Knight</option>
+                </select>
+                <button type="button" onclick="closeChangePawn(document.getElementById('substitute').value)">Choose</button>
             </div>
         </div>
     </div>

@@ -6,6 +6,9 @@
 #include <sstream>
 #include <thread>
 
+
+class IOhandler;
+
 struct Move {
   std::pair<int, int> start;
   std::pair<int, int> end;
@@ -50,7 +53,7 @@ protected:
                                          int difficulty, int depth,
                                          int maxDepth, float worth);
   static void threadFunc(Thread_Parameter *param);
-  static ChessPieceCode askReplacement();
+  static ChessPieceCode askReplacement(bool side,IOhandler* handler);
 
 public:
   static int
@@ -68,7 +71,7 @@ public:
   static ChessPieceBase ***copyBoard(ChessPieceBase ***board,
                                      bool notImaginary = false);
   static float performMove(const Move &move, ChessPieceBase ***board,
-                           bool overrideRightess = false);
+                           IOhandler* handler,bool overrideRightess = false);
   static void printImaginaryBoard(ChessPieceBase ***board,
                                   std::ostream *out = &std::cout);
   static std::vector<std::pair<int, int>>

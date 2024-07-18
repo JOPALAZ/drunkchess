@@ -13,5 +13,6 @@ urlpatterns = [
     path('save-score/',views.save_result,name="save_result"),
     path('dump/',views.dump,name="dump"),
     path('upload/',views.upload,name="upload"),
-    path('stop/',views.stop_client,name="stop_client")
+    path('stop/',views.stop_client,name="stop_client"),
+    path('set-substitute/',views.set_substitute,name='set_substitute')
 ]
