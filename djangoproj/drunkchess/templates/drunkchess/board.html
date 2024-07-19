@@ -67,7 +67,7 @@
                     },
                 });
                 updateBoard(response.setup_data);
-                enemyMove();
+                await enemyMove();
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -100,7 +100,7 @@
         }
 
         async function enemyMove() {
-            lock = true;
+            lock = true
             try {
                 const data = await fetchRequest('/move-enemy/', {
                     method: 'POST',
@@ -110,7 +110,6 @@
                         'X-CSRFToken': getCookie('csrftoken')
                     }
                 });
-                lock = false;
                 removeCircles();
                 startpos = [-1, -1];
                 selectedFigure = false;
@@ -124,6 +123,7 @@
                 } else {
                     console.error(data.what);
                 }
+                lock = false;
             } catch (error) {
                 console.error('Error:', error);
                 lock = false;
@@ -174,7 +174,7 @@
                             
                         } else {
                             updateBoard(data.setup_data);
-                            enemyMove();
+                            await enemyMove();
                         }
                     }
                     lock = false;
@@ -262,7 +262,7 @@
                 lock = false;
                 if (data.status === 'success') {
                     updateBoard(data.setup_data);
-                    if (side === 'black') enemyMove();
+                    if (side === 'black') await enemyMove();
                     gameIsOn = true;
                 } else {
                     removeCircles();
@@ -299,7 +299,7 @@
                 lock = false;
                 if (data.status === 'success') {
                     updateBoard(data.setup_data);
-                    if (side === 'black') enemyMove();
+                    if (side === 'black') await enemyMove();
                     gameIsOn = true;
                 } else {
                     removeCircles();
