@@ -203,6 +203,7 @@ def move_enemy(request):
     response = read_last_output(client_data.cserver)
     
     if response is None:
+        force_stop(client_id=client_id)
         return JsonResponse({'status': 'success', 'setup_data': 'None', 'special_condition': 'AI SURRENDERED, YOU WON.'})
     
     if response.startswith('NOT OK'):
@@ -216,6 +217,13 @@ def move_enemy(request):
         setup_data = get_setup_data(client_data.cserver)
     
     return JsonResponse({'status': 'success', 'setup_data': setup_data, 'special_condition': response})
+
+def force_stop(client_id):
+    if client_id not in clients:
+        return
+    clients[client_id].cserver.kill()
+    clients[client_id].cserver = start_server()
+    clients[client_id].started = False
 
 def send_stop_game(client_id):
     if client_id not in clients:
