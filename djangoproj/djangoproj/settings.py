@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-0y)((&!hn!dm^)u+fomjrf9iv@&ia5b5bqs81-b4o2v#b@11z&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['armenia3070','127.0.0.1']
+ALLOWED_HOSTS = ['armenia3070','budka.local','127.0.0.1']
 
 SESSION_COOKIE_AGE = 1800  
 
