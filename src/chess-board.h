@@ -6,7 +6,6 @@
 #include <sstream>
 #include <thread>
 
-
 class IOhandler;
 
 struct Move {
@@ -18,17 +17,19 @@ struct Move_Candidate {
   Move move;
   float dScore;
 };
+
 struct Figure_Move_Restriction {
   std::pair<int, int> position;
   std::vector<std::pair<int, int>> unrestrictedPositions;
 };
+
 struct Special_Parameter {
   bool kingAttacked;
   std::vector<std::pair<int, int>> saveKingPath;
   std::vector<Figure_Move_Restriction> restrictions;
 };
-struct Thread_Parameter {
 
+struct Thread_Parameter {
   ChessPieceBase ***board;
   bool white;
   int difficulty;
@@ -49,15 +50,24 @@ protected:
   ChessPieceBase ***board;
   int difficulty;
   int maxDepth;
+
   static const float recursiveSubroutine(ChessPieceBase ***board, bool white,
                                          int difficulty, int depth,
                                          int maxDepth, float worth);
   static void threadFunc(Thread_Parameter *param);
-  static ChessPieceCode askReplacement(bool side,IOhandler* handler);
+  static ChessPieceCode askReplacement(bool side, IOhandler* handler);
+
+  // New helper function declarations
+  static float performAttack(const Move &move, ChessPieceBase ***board,
+                             IOhandler* handler);
+  static float performNormalMove(const Move &move, ChessPieceBase ***board,
+                                 IOhandler* handler);
+  static float performCastling(const Move &move, ChessPieceBase ***board,
+                               IOhandler* handler);
 
 public:
   static int
-  findFigureIndex(const std::vector<Figure_Move_Restriction> restrictions,
+  findFigureIndex(const std::vector<Figure_Move_Restriction> &restrictions,
                   std::pair<int, int> pos);
   static bool isDangerous(int distance, std::pair<int, int> kingPos, int8_t dX,
                           int8_t dY, ChessPieceBase *suspect);
@@ -71,7 +81,7 @@ public:
   static ChessPieceBase ***copyBoard(ChessPieceBase ***board,
                                      bool notImaginary = false);
   static float performMove(const Move &move, ChessPieceBase ***board,
-                           IOhandler* handler,bool overrideRightess = false);
+                           IOhandler* handler, bool overrideRightess = false);
   static void printImaginaryBoard(ChessPieceBase ***board,
                                   std::ostream *out = &std::cout);
   static std::vector<std::pair<int, int>>
@@ -97,7 +107,7 @@ public:
   Move getBestMove(bool white);
   ChessPieceBase ***getBoard() { return board; }
   void debugPrintDanger();
-  ChessBoard(Logger *log, int diffficulty);
+  ChessBoard(Logger *log, int difficulty);
   static std::set<std::pair<int, int>>
   getDangerousPoints(ChessPieceBase ***board, bool white);
   void clear();

@@ -1,6 +1,7 @@
 #include "chess-peice.h"
 #include "chess-board.h"
 #include <set>
+
 ChessPieceCode ChessPieceBase::getCode() { return code; }
 // todo peredelat vezde attack candidates potomu 4to esli ya natikajus' na empty
 // to ja dolzhen delat 4ek jesli je to vrag, i jesli net to sri sebe v rot.
@@ -140,7 +141,7 @@ ChessPieceEmpty::~ChessPieceEmpty() {
 }
 
 ChessPiecePawn::ChessPiecePawn(int x, int y, bool color, Logger *log,
-                               ChessPieceBase ***board, bool moved_ = false) {
+                               ChessPieceBase ***board, bool moved_) {
   this->log = log;
   this->x = x;
   this->y = y;
@@ -192,7 +193,7 @@ ChessPiecePawn::~ChessPiecePawn()
 
 ChessPieceKnight::ChessPieceKnight(int x, int y, bool color, Logger *log,
                                    ChessPieceBase ***board,
-                                   bool moved_ = false) {
+                                   bool moved_) {
   this->log = log;
   this->x = x;
   this->y = y;
@@ -258,7 +259,8 @@ ChessPieceKnight::~ChessPieceKnight()
 }
 
 ChessPieceRook::ChessPieceRook(int x, int y, bool color, Logger *log,
-                               ChessPieceBase ***board, bool moved_ = false) {
+                               ChessPieceBase ***board,
+                               bool moved_) {
   this->log = log;
   this->x = x;
   this->y = y;
@@ -327,9 +329,10 @@ ChessPieceRook::~ChessPieceRook()
   if (log)
     this->log->log("ROOK DELETED");
 }
+
 ChessPieceBishop::ChessPieceBishop(int x, int y, bool color, Logger *log,
                                    ChessPieceBase ***board,
-                                   bool moved_ = false) {
+                                   bool moved_) {
   this->log = log;
   this->x = x;
   this->y = y;
@@ -438,7 +441,8 @@ ChessPieceBishop::~ChessPieceBishop()
 
 
 ChessPieceQueen::ChessPieceQueen(int x, int y, bool color, Logger *log,
-                                 ChessPieceBase ***board, bool moved_ = false) {
+                                 ChessPieceBase ***board,
+                                 bool moved_) {
   this->log = log;
   this->x = x;
   this->y = y;
@@ -588,7 +592,8 @@ ChessPieceQueen::~ChessPieceQueen()
 }
 
 ChessPeiceKing::ChessPeiceKing(int x, int y, bool color, Logger *log,
-                               ChessPieceBase ***board, bool moved_ = false) {
+                               ChessPieceBase ***board,
+                               bool moved_) {
   this->log = log;
   this->x = x;
   this->y = y;

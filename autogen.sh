@@ -1,3 +1,7 @@
 #!/bin/bash
-g++ ./src/*.cpp -O3 -finline-functions -funroll-loops -fprefetch-loop-arrays -fomit-frame-pointer -march=x86-64 -fpermissive -o ./bin/chess-server
-strip ./bin/chess-server 
+mkdir build
+cd build
+cmake .. -G "MinGW Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+make -j`nproc`
+cd ..
+rm -rf build
