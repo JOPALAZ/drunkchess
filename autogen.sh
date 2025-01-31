@@ -17,3 +17,4 @@ make -j"$(nproc)"
 # Go back to the root directory and remove the build folder
 cd ..
 rm -rf build
+
