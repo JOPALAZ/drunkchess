@@ -34,7 +34,7 @@ if [ -d "./djangoproj" ]; then
   # Check if manage.py exists in the djangoproj directory
   if [ -f "manage.py" ]; then
     echo "Starting Django server..."
-    python manage.py runserver
+    python3 manage.py runserver
   else
     echo "File manage.py not found in djangoproj. Exiting."
     exit 1
