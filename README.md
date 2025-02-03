@@ -1,4 +1,4 @@
-# Chess Web Implementation
+# Chess Web Implementation (Drunk Chess)
 
 ## Overview
 This project is a web-based chess implementation consisting of two main components:
