@@ -3,9 +3,12 @@
 <html>
 <head>
     {% csrf_token %}
-    <link rel="stylesheet" type="text/css" href="{% static 'styles.css' %}">
     <title>Drunk Chess Board</title>
+    <!-- Link to main CSS file -->
+    <link rel="stylesheet" type="text/css" href="{% static 'styles.css' %}">
+    
     <script>
+        // Global variables
         const clientId = "{{ client_id }}";
         let selectedFigure = false;
         let startpos = [-1, -1];
@@ -13,7 +16,9 @@
         let competitive = false;
         let moves = 0;
         console.log("Client ID", clientId);
-        let lock=false;
+        let lock = false;
+
+        // Helper function to perform fetch requests
         async function fetchRequest(url, options) {
             const response = await fetch(url, options);
             if (!response.ok) {
@@ -22,6 +27,7 @@
             return await response.json();
         }
 
+        // Show a message modal with the provided message
         function showMessage(message) {
             document.getElementById('messageText').innerText = message;
             document.getElementById('messageModal').style.display = 'flex';
@@ -31,6 +37,7 @@
             document.getElementById('messageModal').style.display = 'none';
         }
 
+        // Show save score modal
         function showSave() {
             document.getElementById('saveText').innerText = `Your result: ${moves} moves`;
             document.getElementById('saveScoreModal').style.display = 'flex';
@@ -41,6 +48,7 @@
             if (save) saveData();
         }
 
+        // Show or close the predefined game modal
         function showDump() {
             document.getElementById('PredefinedModal').style.display = 'flex';
         }
@@ -49,12 +57,13 @@
             document.getElementById('PredefinedModal').style.display = 'none';
         }
 
-        function showChangePawn()
-        {
+        // Show pawn promotion modal
+        function showChangePawn() {
             document.getElementById('PawnChangeModal').style.display = 'flex';
         }
-       async function closeChangePawn(what)
-        {
+        
+        // Close pawn change modal and update board accordingly
+        async function closeChangePawn(what) {
             document.getElementById('PawnChangeModal').style.display = 'none';
             try {
                 const response = await fetchRequest('/set-substitute/', {
@@ -73,9 +82,9 @@
             }
         }
 
-
+        // Save game data (score)
         async function saveData() {
-            if (lock) return alert('Wasn\'t saved.');
+            if (lock) return alert("Wasn't saved.");
             lock = true;
             try {
                 const Name = document.getElementById('scoreName').value;
@@ -92,15 +101,16 @@
                 lock = false;
                 if (response.status !== 'success') alert(response.what);
             } catch (error) {
-                gameIsOn=false;
+                gameIsOn = false;
                 clearBoard();
                 console.error('Error:', error);
                 lock = false;
             }
         }
 
+        // Handle enemy's move
         async function enemyMove() {
-            lock = true
+            lock = true;
             try {
                 const data = await fetchRequest('/move-enemy/', {
                     method: 'POST',
@@ -130,6 +140,7 @@
             }
         }
 
+        // Handle cell clicks on the board
         async function cellClicked(col, row) {
             if (!gameIsOn || lock) return;
             lock = true;
@@ -157,21 +168,19 @@
                 removeCircles();
                 startpos = selectedFigure ? [-1, -1] : [col, row];
                 selectedFigure = !selectedFigure;
+
                 if (data.status === 'success') {
-                    if (selectedFigure) fillCirles(data.candidates);
-                    else {
+                    if (selectedFigure) {
+                        fillCirles(data.candidates);
+                    } else {
                         moves += 1;
                         if (data.special_condition !== "OK" && data.special_condition !== "NOT OK") {
-                            if(data.special_condition==='CODE?')
-                            {
+                            if (data.special_condition === 'CODE?') {
                                 showChangePawn();
-                            }
-                            else
-                            {
+                            } else {
                                 showMessage(data.special_condition);
                                 gameIsOn = false;   
                             }
-                            
                         } else {
                             updateBoard(data.setup_data);
                             await enemyMove();
@@ -189,6 +198,8 @@
                 lock = false;
             }
         }
+
+        // Flip board orientation based on player's side
         function flipBoard(black) {
             let letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
             if (black) letters.reverse();
@@ -210,6 +221,7 @@
             }
         }
 
+        // Fill valid move circles into the specified cells
         function fillCirles(points) {
             points.forEach(piece => {
                 if (piece !== "NONE") {
@@ -224,10 +236,12 @@
             });
         }
 
+        // Remove all move indicator circles from the board
         function removeCircles() {
             document.querySelectorAll('.chess-board .circle').forEach(circle => circle.remove());
         }
 
+        // Reset idle timer on server (every 5 minutes)
         function resetIdle() {
             fetch('/reset-idle/', {
                 method: 'POST',
@@ -239,6 +253,7 @@
             });
         }
 
+        // Start a new game (non-competitive)
         async function startGame() {
             if (lock) return;
             lock = true;
@@ -275,8 +290,8 @@
             }
         }
 
-        async function startCompetitive()
-        {
+        // Start a competitive game
+        async function startCompetitive() {
             if (lock) return;
             lock = true;
             clearBoard();
@@ -285,7 +300,7 @@
             competitive = true;
             moves = 0;
             const difficulty = 10;
-            const side =  Math.floor(Math.random()*2)==1? 'black':'white';;
+            const side = Math.floor(Math.random() * 2) === 1 ? 'black' : 'white';
             flipBoard(side === 'black');
             try {
                 const data = await fetchRequest(`/start-game/${difficulty}/${side}/`, {
@@ -311,44 +326,48 @@
                 lock = false;
             }
         }
-        function setPredifinedParams(params)
-        {
-            document.getElementById('priceKing').value=params[0];
-            document.getElementById('priceQueen').value=params[1];
-            document.getElementById('priceRook').value=params[2];
-            document.getElementById('priceBishop').value=params[3];
-            document.getElementById('priceKnight').value=params[4];
-            document.getElementById('pricePawn').value=params[5];
-            document.getElementById('priceEmpty').value=params[6];
-            document.getElementById('pricePate').value=params[8];
-            document.getElementById('priceMate').value=params[9];
-            document.getElementById('priceFirstMove').value=params[10];
-            document.getElementById('priceCastling').value=params[11];
-            document.getElementById('attackCost').value=params[12];
-            document.getElementById('worth').value=params[13];
-            document.getElementById('difficulty').value = params[14]
-            document.getElementById('side').value = params[15]==1? 'white':'black';
+
+        // Set predefined parameters from an uploaded file
+        function setPredifinedParams(params) {
+            document.getElementById('priceKing').value = params[0];
+            document.getElementById('priceQueen').value = params[1];
+            document.getElementById('priceRook').value = params[2];
+            document.getElementById('priceBishop').value = params[3];
+            document.getElementById('priceKnight').value = params[4];
+            document.getElementById('pricePawn').value = params[5];
+            document.getElementById('priceEmpty').value = params[6];
+            document.getElementById('pricePate').value = params[8];
+            document.getElementById('priceMate').value = params[9];
+            document.getElementById('priceFirstMove').value = params[10];
+            document.getElementById('priceCastling').value = params[11];
+            document.getElementById('attackCost').value = params[12];
+            document.getElementById('worth').value = params[13];
+            document.getElementById('difficulty').value = params[14];
+            document.getElementById('side').value = params[15] == 1 ? 'white' : 'black';
             clearBoard();
-            flipBoard(params[15]==0);
+            flipBoard(params[15] == 0);
             saveSettings();
         }
-        function setDefaultSettings()
-        {
-            document.getElementById('priceEmpty').value=0;
-            document.getElementById('pricePawn').value=100;
-            document.getElementById('priceKnight').value=320;
-            document.getElementById('priceBishop').value=330;
-            document.getElementById('priceRook').value=500;
-            document.getElementById('priceQueen').value=900;
-            document.getElementById('priceKing').value=1100;
-            document.getElementById('priceMate').value=-999999;
-            document.getElementById('pricePate').value=0;
-            document.getElementById('priceFirstMove').value=1;
-            document.getElementById('priceCastling').value=50;
-            document.getElementById('attackCost').value=0.05;
-            document.getElementById('worth').value=0.9;
+
+        // Set default settings values
+        function setDefaultSettings() {
+            document.getElementById('priceEmpty').value = 0;
+            document.getElementById('pricePawn').value = 100;
+            document.getElementById('priceKnight').value = 320;
+            document.getElementById('priceBishop').value = 330;
+            document.getElementById('priceRook').value = 500;
+            document.getElementById('priceQueen').value = 900;
+            document.getElementById('priceKing').value = 1100;
+            document.getElementById('priceMate').value = -999999;
+            document.getElementById('pricePate').value = 0;
+            document.getElementById('priceFirstMove').value = 1;
+            document.getElementById('priceCastling').value = 50;
+            document.getElementById('attackCost').value = 0.05;
+            document.getElementById('worth').value = 0.9;
             saveSettings();
         }
+
+        // Retrieve CSRF token from cookies
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -363,10 +382,11 @@
             }
             return cookieValue;
         }
+
+        // File upload function
         function uploadFile() {
-            if(lock==false)
-            {
-                lock=true;
+            if (!lock) {
+                lock = true;
                 const fileInput = document.getElementById('file-input');
                 const formData = new FormData();
                 formData.append('file', fileInput.files[0]);
@@ -383,15 +403,15 @@
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('settingsButton').disabled = false;
-                    document.getElementById('settingsButton').style.display='flex';
-                    competitive=false;
+                    document.getElementById('settingsButton').style.display = 'flex';
+                    competitive = false;
                     moves = 0;
                     setPredifinedParams(data.params);
                     updateBoard(data.setup_data);
                     closeDump();
                     document.getElementById('file-input').value = '';
-                    gameIsOn=true;
-                    lock=false;
+                    gameIsOn = true;
+                    lock = false;
                 })
                 .catch(error => {
                     alert('Upload failed');
@@ -399,14 +419,15 @@
                     console.error('Error:', error);
                     startpos = [-1, -1];
                     selectedFigure = false;
-                    lock=false;
+                    lock = false;
                 });
             }
         }
+
+        // Download game dump
         async function dump() {
-            if(lock==false&&gameIsOn)
-            {
-                lock=true;
+            if (!lock && gameIsOn) {
+                lock = true;
                 try {
                     const response = await fetch('/dump/', {
                         method: 'POST',
@@ -429,34 +450,29 @@
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-
                 } catch (error) {
-                    console.error('Couldn\'t dump:', error);
+                    console.error("Couldn't dump:", error);
                 }
-                lock=false;
+                lock = false;
             }
-            
         }
-        function clearBoard()
-        {
+
+        // Clear all cells on the chess board
+        function clearBoard() {
             const cells = document.querySelectorAll('.chess-board div');
             cells.forEach(cell => {
                 cell.innerHTML = '';
             });
         }
+
+        // Update board based on setup data from server
         function updateBoard(setupData) {
             const cells = document.querySelectorAll('.chess-board div');
             cells.forEach(cell => {
-                const buf = cell.querySelectorAll('span');
+                // Preserve existing span elements (e.g., labels)
+                const letters = [...cell.querySelectorAll('span')];
                 cell.innerHTML = '';
-                if(buf)
-                {
-                    console.log(buf.length)
-                    buf.forEach(el =>
-                    {
-                        cell.appendChild(el);
-                    })
-                }
+                letters.forEach(el => cell.appendChild(el));
             });
 
             setupData.forEach((piece, index) => {
@@ -467,26 +483,28 @@
                     const img = document.createElement('img');
                     img.src = `{% static 'images/' %}${piece.color.toLowerCase()}_${piece.code.toLowerCase()}.png`;
                     img.alt = piece.code;
+                    img.className = 'chess-piece';
                     cell.appendChild(img);
                 }
             });
         }
-        
+
+        // Open settings modal
         function showSettings() {
             document.getElementById('settingsModal').style.display = "block";
         }
 
+        // Close settings modal; save settings if indicated
         function closeSettings(save) {
             document.getElementById('settingsModal').style.display = "none";
-            if(save)
-            {
+            if (save) {
                 saveSettings();
             }
         }
 
+        // Save settings by sending parameters to server
         function saveSettings() {
-            if(lock==false)
-            {
+            if (!lock) {
                 const piecePrices = {
                     empty: parseInt(document.getElementById('priceEmpty').value),
                     pawn: parseInt(document.getElementById('pricePawn').value),
@@ -523,23 +541,27 @@
                 fetch('/set-params/', {
                     method: 'POST',
                     headers: headers
-                })
+                });
                 closeSettings();
             }
         }
+
+        // Validate numeric input within specified min/max
         function validateDifficulty(input) {
             if (parseFloat(input.value) < parseFloat(input.min)) input.value = input.min;
             if (parseFloat(input.value) > parseFloat(input.max)) input.value = input.max;
-            if (input.value ==='') input.value=input.min;
+            if (input.value === '') input.value = input.min;
         }
+
+        // On page load, check for dark theme setting in localStorage
         document.addEventListener('DOMContentLoaded', function() {
             const darkTheme = localStorage.getItem('darktheme');
             if (darkTheme === '1') {
-                console.log("Dark theme is enabled");
                 document.body.classList.add('dark-theme');
             }
         });
 
+        // Toggle dark theme and store preference in localStorage
         function toggleDarkTheme() {
             document.body.classList.toggle('dark-theme');
             const isDarkTheme = document.body.classList.contains('dark-theme');
@@ -550,7 +572,10 @@
             }
         }
 
+        // Reset idle timer every 5 minutes
         setInterval(resetIdle, 300000);
+
+        // Notify server before unloading the page
         window.onbeforeunload = function() {
             fetch(`/stop/`, {
                 method: 'POST',
@@ -559,7 +584,7 @@
                     'X-Client-ID': clientId,
                     'X-CSRFToken': getCookie('csrftoken'),
                 },
-            })
+            });
         };
     </script>
 </head>
@@ -568,7 +593,7 @@
         <header>
             <h1>Drunk Chess Board</h1>
             <div class="header-buttons">
-                <button id="settingsButton" onclick="showSettings()" >Settings</button>
+                <button id="settingsButton" onclick="showSettings()">Settings</button>
                 <button onclick="toggleDarkTheme()">Toggle Dark Theme</button>
                 <button onclick="window.location.href='leaderboard/'">Leaderboard</button>
             </div>
@@ -578,8 +603,8 @@
                 {% for row in board_colors reversed %}
                     {% for col in row %}
                         <div id="cell-{{ 7|subtract:forloop.parentloop.counter0 }}-{{ forloop.counter0 }}"
-                            class="{{ col }}"
-                            onclick="cellClicked({{ forloop.counter0 }}, {{ 7|subtract:forloop.parentloop.counter0 }} )">
+                             class="{{ col }}"
+                             onclick="cellClicked({{ forloop.counter0 }}, {{ 7|subtract:forloop.parentloop.counter0 }})">
                         </div>
                     {% endfor %}
                 {% endfor %}
@@ -602,7 +627,7 @@
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <span class="close", id="closeButton" onclick="closeSettings(false)">&times;</span>
+            <span class="close" id="closeButton" onclick="closeSettings(false)">&times;</span>
             <h2>Settings</h2>
             <div class="options">
                 <label for="priceEmpty">Price of Empty Cell:</label>
@@ -612,21 +637,21 @@
                 <label for="priceKnight">Price of Knight:</label>
                 <input type="number" id="priceKnight" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="320">
                 <label for="priceBishop">Price of Bishop:</label>
-                <input type="number" id="priceBishop"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="330">
+                <input type="number" id="priceBishop" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="330">
                 <label for="priceRook">Price of Rook:</label>
-                <input type="number" id="priceRook"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="500">
+                <input type="number" id="priceRook" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="500">
                 <label for="priceQueen">Price of Queen:</label>
-                <input type="number" id="priceQueen"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="900">
+                <input type="number" id="priceQueen" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="900">
                 <label for="priceKing">Price of King:</label>
-                <input type="number" id="priceKing"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="1100">
+                <input type="number" id="priceKing" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="1100">
                 <label for="priceMate">Price of Mate:</label>
-                <input type="number" id="priceMate"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="-999999">
+                <input type="number" id="priceMate" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="-999999">
                 <label for="pricePate">Price of Pate:</label>
-                <input type="number" id="pricePate"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="0">
+                <input type="number" id="pricePate" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="0">
                 <label for="priceCastling">Price of Castling:</label>
-                <input type="number" id="priceCastling"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="50">
+                <input type="number" id="priceCastling" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="50">
                 <label for="priceFirstMove">Price of First Move:</label>
-                <input type="number" id="priceFirstMove"  step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="1">
+                <input type="number" id="priceFirstMove" step="1" max="2147483646" min="-2147483646" onblur="validateDifficulty(this)" value="1">
                 <label for="attackCost">Attack Cost Coefficient:</label>
                 <input type="number" id="attackCost" min="0" max="2" step="0.005" onblur="validateDifficulty(this)" value="0.05">
                 <label for="worth">Worth Coefficient:</label>
@@ -638,24 +663,29 @@
             </div>
         </div>
     </div>
+    
+    <!-- Save Score Modal -->
     <div id="saveScoreModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeSave(false)">&times;</span>
             <div class="options">
                 <p id="saveText"></p>
-                <label for="priceEmpty">Name: </label>
-                <input type="string" id="scoreName">
+                <label>Name: </label>
+                <input type="text" id="scoreName">
                 <button onclick="closeSave(true)">Save</button>
             </div>
         </div>
     </div>
+
+    <!-- Message Modal -->
     <div id="messageModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeMessage()">&times;</span>
             <p id="messageText"></p>
-            
         </div>
     </div>
+
+    <!-- Predefined Game Modal -->
     <div id="PredefinedModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeDump()">&times;</span>
@@ -668,11 +698,13 @@
             </div>
         </div>
     </div>
+
+    <!-- Pawn Change Modal -->
     <div id="PawnChangeModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeChangePawn('Q')">&times;</span>
             <div class="options">
-                <p>Choose figure you want to substitute.</p>
+                <p>Choose the figure to substitute.</p>
                 <select id="substitute" name="substitute" value="Q">
                     <option value="Q">Queen</option>
                     <option value="B">Bishop</option>
