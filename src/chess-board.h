@@ -20,6 +20,13 @@ struct Move {
   std::pair<int, int> end;
 };
 
+struct LastMove : Move
+{
+  ChessPieceCode code;
+  bool firstMove;
+};
+
+
 /**
  * @struct Move_Candidate
  * @brief Associates a chess move with a floating-point score or delta.
@@ -49,13 +56,13 @@ struct Special_Parameter {
   std::vector<std::pair<int, int>> saveKingPath; ///< The squares that would resolve a check situation.
   std::vector<Figure_Move_Restriction> restrictions; ///< Movement restrictions for certain pieces.
 };
-
+class ChessBoard;
 /**
  * @struct Thread_Parameter
  * @brief Used for multithreading operations in AI or move calculation.
  */
 struct Thread_Parameter {
-  ChessPieceBase ***board; ///< The chessboard on which operations are performed.
+  ChessBoard* board; ///< The chessboard on which operations are performed.
   bool white;              ///< Indicates if this parameter applies to white (true) or black (false).
   int difficulty;          ///< The difficulty level for AI computations.
   int depth;               ///< Current search depth.
@@ -101,6 +108,7 @@ protected:
   ChessPieceBase ***board;   ///< 2D array (8x8) representing the board.
   int difficulty;            ///< Difficulty level for AI.
   int maxDepth;              ///< Maximum search depth for AI or game logic.
+  LastMove lastmove;
 
   /**
    * @brief Recursive evaluation function for AI or search algorithms.
@@ -112,7 +120,7 @@ protected:
    * @param worth Additional evaluation parameter for weighting.
    * @return A float score representing the evaluation of the board.
    */
-  static const float recursiveSubroutine(ChessPieceBase ***board, bool white,
+  static const float recursiveSubroutine(ChessBoard *board, bool white,
                                          int difficulty, int depth,
                                          int maxDepth, float worth);
 
@@ -137,7 +145,7 @@ protected:
    * @param handler Optional pointer to IOhandler for user interactions (pawn promotion, etc.).
    * @return A float representing the score impact of this attack move.
    */
-  static float performAttack(const Move &move, ChessPieceBase ***board,
+  float performAttack(const Move &move,
                              IOhandler* handler);
 
   /**
@@ -147,7 +155,7 @@ protected:
    * @param handler Optional pointer to IOhandler for user interactions.
    * @return A float representing the score impact of this normal move.
    */
-  static float performNormalMove(const Move &move, ChessPieceBase ***board,
+  float performNormalMove(const Move &move,
                                  IOhandler* handler);
 
   /**
@@ -157,7 +165,7 @@ protected:
    * @param handler Optional pointer to IOhandler for user interactions.
    * @return A float representing the score impact of castling.
    */
-  static float performCastling(const Move &move, ChessPieceBase ***board,
+  float performCastling(const Move &move,
                                IOhandler* handler);
 
 public:
@@ -195,7 +203,7 @@ public:
    */
   static ChessPieceBase *createPeice(int x, int y, bool color,
                                      ChessPieceCode code, Logger *log,
-                                     ChessPieceBase ***board,
+                                     ChessBoard *board,
                                      bool moved_ = false);
 
   /**
@@ -203,8 +211,8 @@ public:
    * @param imgainaryBoard Source board to revert from.
    * @param board Destination board to restore to.
    */
-  static void revertBoard(ChessPieceBase ***imgainaryBoard,
-                          ChessPieceBase ***board);
+  static void revertBoard(ChessBoard* imaginaryBoard,
+                          ChessBoard* board);
 
   /**
    * @brief Deletes a dynamically allocated chessboard array.
@@ -219,8 +227,8 @@ public:
    * @param notImaginary If true, indicates a full copy for the main game state, otherwise for simulations.
    * @return A pointer to the new copy of the board.
    */
-  static ChessPieceBase ***copyBoard(ChessPieceBase ***board,
-                                     bool notImaginary = false);
+  static ChessPieceBase ***copyBoard(ChessBoard* chessBoardOld,
+     ChessBoard* chessBoardNew, bool notImaginary = false);
 
   /**
    * @brief Performs a move on the given board, potentially involving captures or special moves.
@@ -230,8 +238,8 @@ public:
    * @param overrideRightess If true, bypass certain checks to force a move (used by AI or internal logic).
    * @return A float representing the immediate score impact of the move.
    */
-  static float performMove(const Move &move, ChessPieceBase ***board,
-                           IOhandler* handler, bool overrideRightess = false);
+  float performMove(const Move &move, IOhandler* handler,
+                                  bool overrideRightess = false);
 
   /**
    * @brief Prints a representation of an imaginary board to the specified output stream.
@@ -292,7 +300,7 @@ public:
    */
   static ChessPieceBase *createPeiceFromString(int x, int y, bool color,
                                                char code, Logger *log,
-                                               ChessPieceBase ***board,
+                                               ChessBoard *board,
                                                bool moved_ = false);
 
   /**
@@ -349,6 +357,9 @@ public:
    * @param difficulty Difficulty level for AI computations.
    */
   ChessBoard(Logger *log, int difficulty);
+  ChessBoard(ChessBoard&) = delete;
+  ChessBoard(ChessBoard* board);
+
 
   /**
    * @brief Retrieves all squares on which the opponent can exert immediate danger.
@@ -363,6 +374,31 @@ public:
    * @brief Clears the board or resets it to an empty state (implementation depends on usage).
    */
   void clear();
+
+  void setLogger(Logger* log)
+  {
+    this->log = log;
+  }
+  
+  Logger* getLogger()
+  {
+    return this->log;
+  }
+
+  void setDifficulty(int dif)
+  {
+    this->difficulty = dif;
+  }
+
+  LastMove getLastMove()
+  {
+    return lastmove;
+  }
+  
+  void setLastMove(LastMove move)
+  {
+    lastmove = move;
+  }
 
   /**
    * @brief Cycles a piece at a given position to a new piece (for example, for testing).

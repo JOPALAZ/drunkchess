@@ -11,6 +11,8 @@
 #include "chess-peice.h"
 #include "chess-board.h"
 #include <set>
+#include <cmath>
+
 
 /**
  * @brief  Helper function to detect if there is an opposing King on an adjacent square.
@@ -46,7 +48,16 @@ static bool isOpposingKingNearby(
 ChessPieceCode ChessPieceBase::getCode() {
     return code;
 }
-
+ChessPieceBase::ChessPieceBase(int x, int y, bool color, Logger *log,
+    ChessBoard* chessBoard, bool moved_ = false)
+    {
+        this->log = log;
+        this->x = x;
+        this->y = y;
+        this->chessBoard = chessBoard;
+        this->white = color;
+        this->moved = moved_;
+    }
 bool ChessPieceBase::isPlayable() {
     return playable;
 }
@@ -132,16 +143,10 @@ void ChessPieceBase::move(const std::pair<int, int> &dest) {
 ChessPieceEmpty::ChessPieceEmpty(
     int x, int y, 
     Logger *log,
-    ChessPieceBase ***board
-) {
-    this->log = log;
-    this->x = x;
-    this->y = y;
+    ChessBoard *board
+) : ChessPieceBase(x,y,false,log,board) {
     this->code = EMPTY;
-    this->board = board;
-    this->white = false;      // An empty square is colorless in practice
     this->playable = false;   // Not playable
-    this->moved = false;
 
     if (log) {
         log->log("EMPTY PIECE CREATED");
@@ -176,18 +181,12 @@ ChessPiecePawn::ChessPiecePawn(
     int x, int y, 
     bool color, 
     Logger *log,
-    ChessPieceBase ***board,
+    ChessBoard *board,
     bool moved_
-) {
-    this->log = log;
-    this->x = x;
-    this->y = y;
-    this->code = PAWN;
-    this->board = board;
-    this->white = color;
-    this->playable = true;
-    this->moved = moved_;
+) : ChessPieceBase(x, y, color, log, board, moved_) {
 
+    this->code = PAWN;
+    this->playable = true;
     if (log) {
         log->log("PAWN CREATED");
     }
@@ -205,7 +204,7 @@ std::vector<std::pair<int, int>> ChessPiecePawn::getMoveCandidates() {
     // The pawn can move one square forward if it's empty
     int oneStepRow = y + deltaRow;
     if (oneStepRow >= 0 && oneStepRow < BOARDSIZE) {
-        if (board[oneStepRow][x]->getCode() == EMPTY) {
+        if (chessBoard->getBoard()[oneStepRow][x]->getCode() == EMPTY) {
             moves.push_back({oneStepRow, x});
         }
     }
@@ -215,8 +214,8 @@ std::vector<std::pair<int, int>> ChessPiecePawn::getMoveCandidates() {
         int twoStepRow = y + 2 * deltaRow;
         if (twoStepRow >= 0 && twoStepRow < BOARDSIZE) {
             // Only if the intermediate and final squares are empty
-            if (board[oneStepRow][x]->getCode() == EMPTY &&
-                board[twoStepRow][x]->getCode() == EMPTY)
+            if (chessBoard->getBoard()[oneStepRow][x]->getCode() == EMPTY &&
+                chessBoard->getBoard()[twoStepRow][x]->getCode() == EMPTY)
             {
                 moves.push_back({twoStepRow, x});
             }
@@ -242,11 +241,22 @@ std::vector<std::pair<int, int>> ChessPiecePawn::getAttackCandidates(bool all) {
         if (newRow >= 0 && newRow < BOARDSIZE &&
             newCol >= 0 && newCol < BOARDSIZE)
         {
-            ChessPieceCode targetCode = board[newRow][newCol]->getCode();
-            bool targetColor = board[newRow][newCol]->isWhite();
+            ChessPieceCode targetCode = chessBoard->getBoard()[newRow][newCol]->getCode();
+            bool targetColor = chessBoard->getBoard()[newRow][newCol]->isWhite();
+            //En passant
+            if(targetCode == EMPTY)
+            {
+                if( chessBoard->getLastMove().code == PAWN &&
+                    chessBoard->getLastMove().firstMove &&
+                    chessBoard->getLastMove().end.second == newCol &&
+                    abs(chessBoard->getLastMove().end.first - chessBoard->getLastMove().start.first) == 2)
+                    {
+                        attacks.push_back({newRow, newCol});
+                    }
+            }
 
             // If the target is empty and 'all' is set, we include it for possible path usage
-            if (targetCode == EMPTY && all) {
+            else if (targetCode == EMPTY && all) {
                 attacks.push_back({newRow, newCol});
             }
 
@@ -271,17 +281,12 @@ ChessPiecePawn::~ChessPiecePawn() {
 ChessPieceKnight::ChessPieceKnight(
     int x, int y, bool color, 
     Logger *log, 
-    ChessPieceBase ***board,
+    ChessBoard *board,
     bool moved_
-) {
-    this->log = log;
-    this->x = x;
-    this->y = y;
+) : ChessPieceBase(x, y, color, log, board, moved_) {
     this->code = KNIGHT;
-    this->board = board;
-    this->white = color;
     this->playable = true;
-    this->moved = moved_;
+
 
     if (log) {
         log->log("KNIGHT CREATED");
@@ -306,7 +311,7 @@ std::vector<std::pair<int, int>> ChessPieceKnight::getMoveCandidates() {
         if (newCol >= 0 && newCol < BOARDSIZE &&
             newRow >= 0 && newRow < BOARDSIZE)
         {
-            if (board[newRow][newCol]->getCode() == EMPTY) {
+            if (chessBoard->getBoard()[newRow][newCol]->getCode() == EMPTY) {
                 moves.push_back({newRow, newCol});
             }
         }
@@ -332,8 +337,8 @@ std::vector<std::pair<int, int>> ChessPieceKnight::getAttackCandidates(bool all)
         if (newCol >= 0 && newCol < BOARDSIZE &&
             newRow >= 0 && newRow < BOARDSIZE)
         {
-            ChessPieceCode targetCode = board[newRow][newCol]->getCode();
-            bool targetColor = board[newRow][newCol]->isWhite();
+            ChessPieceCode targetCode = chessBoard->getBoard()[newRow][newCol]->getCode();
+            bool targetColor = chessBoard->getBoard()[newRow][newCol]->isWhite();
 
             // Attack enemy piece or include empty squares if 'all' is requested
             if ((targetCode != EMPTY && targetColor != white) ||
@@ -358,17 +363,11 @@ ChessPieceKnight::~ChessPieceKnight() {
 ChessPieceRook::ChessPieceRook(
     int x, int y, bool color, 
     Logger *log, 
-    ChessPieceBase ***board,
+    ChessBoard *board,
     bool moved_
-) {
-    this->log = log;
-    this->x = x;
-    this->y = y;
+) : ChessPieceBase(x, y, color, log, board, moved_) {
     this->code = ROOK;
-    this->board = board;
-    this->white = color;
     this->playable = true;
-    this->moved = moved_;
 
     if (log) {
         log->log("ROOK CREATED");
@@ -385,7 +384,7 @@ std::vector<std::pair<int, int>> ChessPieceRook::getMoveCandidates() {
     for (int direction : {-1, 1}) {
         // Move along rows
         for (int row = y + direction; row >= 0 && row < BOARDSIZE; row += direction) {
-            if (board[row][x]->getCode() == EMPTY) {
+            if (chessBoard->getBoard()[row][x]->getCode() == EMPTY) {
                 moves.push_back({row, x});
             } else {
                 // Stop if we find a piece
@@ -394,7 +393,7 @@ std::vector<std::pair<int, int>> ChessPieceRook::getMoveCandidates() {
         }
         // Move along columns
         for (int col = x + direction; col >= 0 && col < BOARDSIZE; col += direction) {
-            if (board[y][col]->getCode() == EMPTY) {
+            if (chessBoard->getBoard()[y][col]->getCode() == EMPTY) {
                 moves.push_back({y, col});
             } else {
                 // Stop if we find a piece
@@ -415,7 +414,7 @@ std::vector<std::pair<int, int>> ChessPieceRook::getAttackCandidates(bool all) {
     for (int direction : {-1, 1}) {
         // Vertical (rows)
         for (int row = y + direction; row >= 0 && row < BOARDSIZE; row += direction) {
-            ChessPieceBase* piece = board[row][x];
+            ChessPieceBase* piece = chessBoard->getBoard()[row][x];
             if (piece->getCode() != EMPTY) {
                 // If it's an enemy piece, we can attack it
                 if (piece->isWhite() != white) {
@@ -429,7 +428,7 @@ std::vector<std::pair<int, int>> ChessPieceRook::getAttackCandidates(bool all) {
         }
         // Horizontal (columns)
         for (int col = x + direction; col >= 0 && col < BOARDSIZE; col += direction) {
-            ChessPieceBase* piece = board[y][col];
+            ChessPieceBase* piece = chessBoard->getBoard()[y][col];
             if (piece->getCode() != EMPTY) {
                 // If it's an enemy piece, we can attack it
                 if (piece->isWhite() != white) {
@@ -457,17 +456,11 @@ ChessPieceRook::~ChessPieceRook() {
 ChessPieceBishop::ChessPieceBishop(
     int x, int y, bool color, 
     Logger *log, 
-    ChessPieceBase ***board,
+    ChessBoard *board,
     bool moved_
-) {
-    this->log = log;
-    this->x = x;
-    this->y = y;
+) : ChessPieceBase(x, y, color, log, board, moved_) {
     this->code = BISHOP;
-    this->board = board;
-    this->white = color;
     this->playable = true;
-    this->moved = moved_;
 
     if (log) {
         log->log("BISHOP CREATED");
@@ -498,7 +491,7 @@ std::vector<std::pair<int, int>> ChessPieceBishop::getMoveCandidates() {
             {
                 break; // out of bounds
             }
-            if (board[row][col]->getCode() == EMPTY) {
+            if (chessBoard->getBoard()[row][col]->getCode() == EMPTY) {
                 moves.push_back({row, col});
             } else {
                 // We hit a piece, so no further squares in this direction.
@@ -531,7 +524,7 @@ std::vector<std::pair<int, int>> ChessPieceBishop::getAttackCandidates(bool all)
             {
                 break;
             }
-            ChessPieceBase* piece = board[row][col];
+            ChessPieceBase* piece = chessBoard->getBoard()[row][col];
             if (piece->getCode() != EMPTY) {
                 // If it is an enemy, we can attack; then stop.
                 if (piece->isWhite() != white) {
@@ -560,17 +553,11 @@ ChessPieceQueen::ChessPieceQueen(
     int x, int y, 
     bool color, 
     Logger *log, 
-    ChessPieceBase ***board,
+    ChessBoard *board,
     bool moved_
-) {
-    this->log = log;
-    this->x = x;
-    this->y = y;
+) : ChessPieceBase(x, y, color, log, board, moved_) {
     this->code = QUEEN;
-    this->board = board;
-    this->white = color;
     this->playable = true;
-    this->moved = moved_;
 
     if (log) {
         log->log("QUEEN CREATED");
@@ -588,7 +575,7 @@ std::vector<std::pair<int, int>> ChessPieceQueen::getMoveCandidates() {
     for (int direction : {-1, 1}) {
         // Vertical
         for (int row = y + direction; row >= 0 && row < BOARDSIZE; row += direction) {
-            if (board[row][x]->getCode() == EMPTY) {
+            if (chessBoard->getBoard()[row][x]->getCode() == EMPTY) {
                 moves.push_back({row, x});
             } else {
                 break;
@@ -596,7 +583,7 @@ std::vector<std::pair<int, int>> ChessPieceQueen::getMoveCandidates() {
         }
         // Horizontal
         for (int col = x + direction; col >= 0 && col < BOARDSIZE; col += direction) {
-            if (board[y][col]->getCode() == EMPTY) {
+            if (chessBoard->getBoard()[y][col]->getCode() == EMPTY) {
                 moves.push_back({y, col});
             } else {
                 break;
@@ -620,7 +607,7 @@ std::vector<std::pair<int, int>> ChessPieceQueen::getMoveCandidates() {
             {
                 break;
             }
-            if (board[row][col]->getCode() == EMPTY) {
+            if (chessBoard->getBoard()[row][col]->getCode() == EMPTY) {
                 moves.push_back({row, col});
             } else {
                 break;
@@ -642,7 +629,7 @@ std::vector<std::pair<int, int>> ChessPieceQueen::getAttackCandidates(bool all) 
     for (int direction : {-1, 1}) {
         // Vertical
         for (int row = y + direction; row >= 0 && row < BOARDSIZE; row += direction) {
-            ChessPieceBase* piece = board[row][x];
+            ChessPieceBase* piece = chessBoard->getBoard()[row][x];
             if (piece->getCode() != EMPTY) {
                 if (piece->isWhite() != white) {
                     attacks.push_back({row, x});
@@ -654,7 +641,7 @@ std::vector<std::pair<int, int>> ChessPieceQueen::getAttackCandidates(bool all) 
         }
         // Horizontal
         for (int col = x + direction; col >= 0 && col < BOARDSIZE; col += direction) {
-            ChessPieceBase* piece = board[y][col];
+            ChessPieceBase* piece = chessBoard->getBoard()[y][col];
             if (piece->getCode() != EMPTY) {
                 if (piece->isWhite() != white) {
                     attacks.push_back({y, col});
@@ -682,7 +669,7 @@ std::vector<std::pair<int, int>> ChessPieceQueen::getAttackCandidates(bool all) 
             {
                 break;
             }
-            ChessPieceBase* piece = board[row][col];
+            ChessPieceBase* piece = chessBoard->getBoard()[row][col];
             if (piece->getCode() != EMPTY) {
                 if (piece->isWhite() != white) {
                     attacks.push_back({row, col});
@@ -709,17 +696,11 @@ ChessPeiceKing::ChessPeiceKing(
     int x, int y, 
     bool color, 
     Logger *log, 
-    ChessPieceBase ***board,
+    ChessBoard *board,
     bool moved_
-) {
-    this->log = log;
-    this->x = x;
-    this->y = y;
+) : ChessPieceBase(x, y, color, log, board, moved_) {
     this->code = KING;
-    this->board = board;
-    this->white = color;
     this->playable = true;
-    this->moved = moved_;
 
     if (log) {
         log->log("KING CREATED");
@@ -814,9 +795,9 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getMoveCandidates() {
                 !(row == y && col == x))
             {
                 // Check if the square is empty, not under check, and no nearby enemy king
-                if (board[row][col]->getCode() == EMPTY &&
-                    !ChessBoard::simplifiedEvaluateCheckMate(white, {row, col}, board) &&
-                    !isOpposingKingNearby(board, {row, col}, white))
+                if (chessBoard->getBoard()[row][col]->getCode() == EMPTY &&
+                    !ChessBoard::simplifiedEvaluateCheckMate(white, {row, col}, chessBoard->getBoard()) &&
+                    !isOpposingKingNearby(chessBoard->getBoard(), {row, col}, white))
                 {
                     moves.push_back({row, col});
                 }
@@ -856,13 +837,13 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all) {
                 col >= 0 && col < BOARDSIZE &&
                 !(row == y && col == x))
             {
-                ChessPieceBase* piece = board[row][col];
+                ChessPieceBase* piece = chessBoard->getBoard()[row][col];
                 if (piece->getCode() != EMPTY) {
                     // The destination must not be under check, 
                     // and not be adjacent to the enemy king
-                    if (!ChessBoard::simplifiedEvaluateCheckMate(white, {row, col}, board) &&
+                    if (!ChessBoard::simplifiedEvaluateCheckMate(white, {row, col}, chessBoard->getBoard()) &&
                         piece->isWhite() != white &&
-                        !isOpposingKingNearby(board, {row, col}, white))
+                        !isOpposingKingNearby(chessBoard->getBoard(), {row, col}, white))
                     {
                         attacks.push_back({row, col});
                     }
@@ -870,7 +851,7 @@ std::vector<std::pair<int, int>> ChessPeiceKing::getAttackCandidates(bool all) {
                 // If 'all' is set to true, we also include empty squares 
                 // that are not under check and not near an opposing king
                 else if (all &&
-                         !isOpposingKingNearby(board, {row, col}, white))
+                         !isOpposingKingNearby(chessBoard->getBoard(), {row, col}, white))
                 {
                     attacks.push_back({row, col});
                 }

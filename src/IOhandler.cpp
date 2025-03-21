@@ -518,7 +518,7 @@ void IOhandler::move(const std::string &move) {
         return;
       }
 
-      ch->performMove(bestMove, ch->getBoard(), nullptr, true);
+      ch->performMove(bestMove, nullptr, true);
       if (log) {
         log->log("COMPUTER MOVED: " + Logger::moveToString(bestMove));
       }
@@ -596,7 +596,7 @@ void IOhandler::move(const std::string &move) {
     // A king is free to move if the move is valid for the king, ignoring certain pinned constraints.
     if (isGood || ch->getBoard()[mv.start.first][mv.start.second]->getCode() == KING) {
       try {
-        ch->performMove(mv, ch->getBoard(), this);
+        ch->performMove(mv, this);
         if (log) {
           log->log("PLAYER MOVED: " + Logger::moveToString(mv));
         }

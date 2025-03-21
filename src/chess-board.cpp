@@ -33,7 +33,7 @@ std::vector<std::pair<int, int>> ChessBoard::getOverlap(
  */
 ChessPieceBase* ChessBoard::createPeice(
     int x, int y, bool color, ChessPieceCode code, Logger* log,
-    ChessPieceBase*** board, bool moved_
+    ChessBoard *board, bool moved_
 ) {
     switch (code) {
     case KING:
@@ -55,13 +55,16 @@ ChessPieceBase* ChessBoard::createPeice(
     }
 }
 
+ChessPieceBase*** ChessPieceBase::getBoard() { return chessBoard->getBoard(); }
+
+
 /**
  * @brief Create a chess piece from a single-character code (e.g., 'K', 'Q', etc.).
  * @throws std::runtime_error if the code is invalid.
  */
 ChessPieceBase* ChessBoard::createPeiceFromString(
     int x, int y, bool color, char code, Logger* log,
-    ChessPieceBase*** board, bool moved_
+    ChessBoard * board, bool moved_
 ) {
     switch (code) {
     case 'K':
@@ -175,13 +178,23 @@ ChessBoard::ChessBoard(Logger* log, int difficulty)
     }
 }
 
+ChessBoard::ChessBoard(ChessBoard* board)
+{
+    if(!board) throw std::runtime_error("BOARD PROVIDED WAS NULLPTR");
+    this->difficulty = board->getDifficulty();
+    this->log = nullptr;
+    this->board = copyBoard(board,this);
+}
+
+
+
 /**
  * @brief Create an empty row of chess pieces (all are EMPTY).
  */
 ChessPieceBase** ChessBoard::createEmptyRow(int row) {
     ChessPieceBase** rowArray = new ChessPieceBase*[BOARDSIZE];
     for (int i = 0; i < BOARDSIZE; i++) {
-        rowArray[i] = new ChessPieceEmpty(i, row, log, board);
+        rowArray[i] = new ChessPieceEmpty(i, row, log, this);
     }
     return rowArray;
 }
@@ -193,14 +206,14 @@ ChessPieceBase** ChessBoard::createFirstRow(bool white) {
     ChessPieceBase** rowArray = new ChessPieceBase*[BOARDSIZE];
     int y = white ? 0 : 7;
 
-    rowArray[0] = new ChessPieceRook(0, y, white, log, board);
-    rowArray[1] = new ChessPieceKnight(1, y, white, log, board);
-    rowArray[2] = new ChessPieceBishop(2, y, white, log, board);
-    rowArray[3] = new ChessPieceQueen(3, y, white, log, board);
-    rowArray[4] = new ChessPeiceKing(4, y, white, log, board);
-    rowArray[5] = new ChessPieceBishop(5, y, white, log, board);
-    rowArray[6] = new ChessPieceKnight(6, y, white, log, board);
-    rowArray[7] = new ChessPieceRook(7, y, white, log, board);
+    rowArray[0] = new ChessPieceRook(0, y, white, log, this);
+    rowArray[1] = new ChessPieceKnight(1, y, white, log, this);
+    rowArray[2] = new ChessPieceBishop(2, y, white, log, this);
+    rowArray[3] = new ChessPieceQueen(3, y, white, log, this);
+    rowArray[4] = new ChessPeiceKing(4, y, white, log, this);
+    rowArray[5] = new ChessPieceBishop(5, y, white, log, this);
+    rowArray[6] = new ChessPieceKnight(6, y, white, log, this);
+    rowArray[7] = new ChessPieceRook(7, y, white, log, this);
 
     return rowArray;
 }
@@ -212,7 +225,7 @@ ChessPieceBase** ChessBoard::createPawnRow(bool white) {
     ChessPieceBase** rowArray = new ChessPieceBase*[BOARDSIZE];
     int y = white ? 1 : 6;
     for (int i = 0; i < BOARDSIZE; i++) {
-        rowArray[i] = new ChessPiecePawn(i, y, white, log, board);
+        rowArray[i] = new ChessPiecePawn(i, y, white, log, this);
     }
     return rowArray;
 }
@@ -286,7 +299,7 @@ void ChessBoard::threadFunc(Thread_Parameter* param) {
         param->difficulty, 1,
         param->maxDepth, worth * worth
     );
-    deleteBoard(param->board);
+    delete param->board;
     param->ready = true;
 }
 
@@ -323,7 +336,7 @@ void ChessBoard::makeBoardFromString(const std::string& str) {
         int k = std::stoi(buf);
         counter++;
         board[i][j] = createPeiceFromString(
-            j, i, (k & 0b10), char(k >> 3), this->log, this->board, (k & 0b1)
+            j, i, (k & 0b10), char(k >> 3), this->log, this, (k & 0b1)
         );
         j++;
         if (j == BOARDSIZE) {
@@ -364,13 +377,13 @@ Move ChessBoard::getBestMove(bool white) {
     float maxScore = 0.0f;
     int bestIndex = 0;
 
-    ChessPieceBase*** tempBoard = copyBoard(board);
+    ChessBoard* tempBoard = new ChessBoard(this);
     if (!tempBoard) {
         throw std::runtime_error("OUT_OF_MEMORY");
     }
 
     // Evaluate if the king is in check
-    Special_Parameter checkMate = evaluateCheckMate(white, tempBoard);
+    Special_Parameter checkMate = evaluateCheckMate(white, tempBoard->board);
 
     // Gather move candidates
     for (int i = 0; i < BOARDSIZE; ++i) {
@@ -391,8 +404,9 @@ Move ChessBoard::getBestMove(bool white) {
 
                 // Evaluate each candidate quickly (just 1-ply)
                 for (auto& endPos : candidates) {
-                    revertBoard(tempBoard, board);
-                    float dScore = performMove({{i, j}, endPos}, tempBoard, nullptr, true);
+                    revertBoard(tempBoard, this);
+                    tempBoard->setLastMove(lastmove);
+                    float dScore = tempBoard->performMove({{i, j}, endPos}, nullptr, true);
 
                     // Insert or shift in the top candidates list
                     if (topCandidates.empty()) {
@@ -428,9 +442,12 @@ Move ChessBoard::getBestMove(bool white) {
             throw std::runtime_error("OUT_OF_MEMORY");
         }
 
-        param->board = copyBoard(board);
+        param->board = new ChessBoard(this);
+        if (!param->board) {
+            throw std::runtime_error("OUT_OF_MEMORY");
+        }
         param->score = topCandidates[i].dScore;
-        performMove(topCandidates[i].move, param->board, nullptr, true);
+        param->board->performMove(topCandidates[i].move, nullptr, true);
         param->difficulty = difficulty;
         param->maxDepth = maxDepth;
         param->white = white;
@@ -473,7 +490,7 @@ Move ChessBoard::getBestMove(bool white) {
     }
     params.clear();
     threads.clear();
-    deleteBoard(tempBoard);
+    delete tempBoard;
 
     if (topCandidates.empty()) {
         // No moves found
@@ -536,15 +553,16 @@ std::vector<std::pair<int, int>> ChessBoard::filterMoves(
  *        It uses a minimax-like approach with limited branching.
  */
 const float ChessBoard::recursiveSubroutine(
-    ChessPieceBase*** board, bool white,
+    ChessBoard* chessBoard, bool white,
     int difficulty, int depth, int maxDepth, float worth
 ) {
-    ChessPieceBase*** tempBoard = copyBoard(board);
+    ChessBoard* tempBoard = new ChessBoard(chessBoard);
     if (!tempBoard) {
         throw std::runtime_error("OUT_OF_MEMORY");
     }
 
-    Special_Parameter checkMate = evaluateCheckMate(white, tempBoard);
+    ChessPieceBase*** board = chessBoard->getBoard();
+    Special_Parameter checkMate = evaluateCheckMate(white, tempBoard->board);
     std::vector<Move_Candidate> topCandidates;
 
     // Collect all moves for 'white'
@@ -564,8 +582,9 @@ const float ChessBoard::recursiveSubroutine(
 
                 // 1-ply evaluation
                 for (const auto& endPos : candidates) {
-                    revertBoard(tempBoard, board);
-                    float score = performMove({{i, j}, endPos}, tempBoard, nullptr, true);
+                    revertBoard(tempBoard, chessBoard);
+                    tempBoard->lastmove = chessBoard->lastmove;
+                    float score = tempBoard->performMove({{i, j}, endPos}, nullptr, true);
 
                     if (topCandidates.empty()) {
                         topCandidates.push_back({{{i, j}, endPos}, score});
@@ -595,7 +614,7 @@ const float ChessBoard::recursiveSubroutine(
 
     // If maximum depth is reached, just return the best immediate score
     if (depth == maxDepth) {
-        deleteBoard(tempBoard);
+        delete tempBoard;
         if (!topCandidates.empty()) {
             return topCandidates.front().dScore; // best immediate move
         } else if (checkMate.kingAttacked) {
@@ -609,8 +628,9 @@ const float ChessBoard::recursiveSubroutine(
         bool firstEval = true;
 
         for (int i = 0; i < (int)topCandidates.size(); ++i) {
-            revertBoard(tempBoard, board);
-            performMove(topCandidates[i].move, tempBoard, nullptr, true);
+            revertBoard(tempBoard, chessBoard);
+            tempBoard->lastmove = chessBoard->lastmove;
+            tempBoard->performMove(topCandidates[i].move, nullptr, true);
 
             // Minimax-like approach: subtract the opponent's best response
             float dScore = topCandidates[i].dScore -
@@ -627,7 +647,7 @@ const float ChessBoard::recursiveSubroutine(
             }
         }
 
-        deleteBoard(tempBoard);
+        delete tempBoard;
 
         if (topCandidates.empty()) {
             // No moves found
@@ -653,7 +673,7 @@ const float ChessBoard::recursiveSubroutine(
  * @throws std::logic_error or std::runtime_error if the move is illegal in certain ways.
  */
 float ChessBoard::performMove(
-    const Move& move, ChessPieceBase*** board,
+    const Move& move,
     IOhandler* handler, bool overrideRightess
 ) {
     if (!board) {
@@ -688,13 +708,13 @@ float ChessBoard::performMove(
 
     if (isAttack) {
         // Perform an attacking move
-        return performAttack(move, board, handler);
+        return performAttack(move, handler);
     } else if (canMove) {
         // If the destination is a rook and certain conditions hold, it's castling
         if (board[move.end.first][move.end.second]->getCode() == ROOK) {
-            return performCastling(move, board, handler);
+            return performCastling(move, handler);
         } else {
-            return performNormalMove(move, board, handler);
+            return performNormalMove(move, handler);
         }
     }
 
@@ -707,9 +727,12 @@ float ChessBoard::performMove(
  * @return A material score gained from the capture plus any additional bonuses.
  */
 float ChessBoard::performAttack(
-    const Move& move, ChessPieceBase*** board,
-    IOhandler* handler
+    const Move& move, IOhandler* handler
 ) {
+    lastmove.code = board[move.start.first][move.start.second]->getCode();
+    lastmove.start = move.start;
+    lastmove.end = move.end;
+    lastmove.firstMove = !board[move.start.first][move.start.second]->getCode();
     float score = getScore(board[move.end.first][move.end.second]->getCode());
 
     // Bonus for certain first moves (like a first pawn move?)
@@ -732,7 +755,7 @@ float ChessBoard::performAttack(
             board[move.start.first][move.start.second]->isWhite(),
             promotionCode,
             board[move.start.first][move.start.second]->getLogger(),
-            board, true
+            this, true
         );
 
         delete board[move.start.first][move.start.second];
@@ -741,7 +764,7 @@ float ChessBoard::performAttack(
 
         board[move.start.first][move.start.second] = new ChessPieceEmpty(
             move.start.second, move.start.first,
-            newPiece->getLogger(), board
+            newPiece->getLogger(), this
         );
 
         return score + getScore(promotionCode);
@@ -755,7 +778,7 @@ float ChessBoard::performAttack(
 
     board[move.start.first][move.start.second] = new ChessPieceEmpty(
         move.start.second, move.start.first,
-        board[move.end.first][move.end.second]->getLogger(), board
+        board[move.end.first][move.end.second]->getLogger(), this
     );
 
     return score;
@@ -765,11 +788,14 @@ float ChessBoard::performAttack(
  * @brief Perform a normal (non-attacking) move.
  */
 float ChessBoard::performNormalMove(
-    const Move& move, ChessPieceBase*** board,
+    const Move& move,
     IOhandler* handler
 ) {
     float score = 0.0f;
-
+    lastmove.code = board[move.start.first][move.start.second]->getCode();
+    lastmove.start = move.start;
+    lastmove.end = move.end;
+    lastmove.firstMove = !board[move.start.first][move.start.second]->getCode();
     // Subtract cost for leaving squares that might be attacking opponents
     // (a heuristic).
     for (const auto& coord :
@@ -797,12 +823,12 @@ float ChessBoard::performNormalMove(
             board[move.start.first][move.start.second]->isWhite(),
             promotionCode,
             board[move.start.first][move.start.second]->getLogger(),
-            board, true
+            this, true
         );
 
         delete board[move.start.first][move.start.second];
         board[move.start.first][move.start.second] = new ChessPieceEmpty(
-            move.start.second, move.start.first, newPiece->getLogger(), board
+            move.start.second, move.start.first, newPiece->getLogger(), this
         );
         board[move.end.first][move.end.second] = newPiece;
 
@@ -813,12 +839,37 @@ float ChessBoard::performNormalMove(
         return score + getScore(promotionCode);
     }
 
+    // En passant
+    if(lastmove.code == PAWN)
+    {
+        if(board[move.end.first][move.end.second]->getCode() == EMPTY)
+        {
+            if( lastmove.firstMove &&
+                lastmove.end.second == move.end.second &&
+                abs(lastmove.end.first - lastmove.start.first) == 2)
+                {
+                    ChessPieceBase* newPiece = createPeice(
+                        lastmove.end.second, lastmove.end.first,
+                        false,
+                        EMPTY,
+                        board[lastmove.start.first][lastmove.start.second]->getLogger(),
+                        this, true
+                    );
+                    delete board[lastmove.end.first][lastmove.end.second];
+                    board[lastmove.end.first][lastmove.end.second] = newPiece;
+                    score += getScore(PAWN);
+                }
+        }
+    }
+
     // Perform the normal move
     ChessPieceBase* tempPiece = board[move.end.first][move.end.second];
     board[move.end.first][move.end.second] =
         board[move.start.first][move.start.second];
     board[move.end.first][move.end.second]->move(move.end);
     board[move.start.first][move.start.second] = tempPiece;
+
+
 
     // Add cost for new squares threatened
     for (const auto& coord :
@@ -834,8 +885,7 @@ float ChessBoard::performNormalMove(
  * @brief Perform castling move.
  */
 float ChessBoard::performCastling(
-    const Move& move, ChessPieceBase*** board,
-    IOhandler* handler
+    const Move& move,IOhandler* handler
 ) {
     float score = 0.0f;
 
@@ -878,11 +928,14 @@ float ChessBoard::performCastling(
     }
 
     // Move the Rook first (forced by overrideRightess)
-    performMove({move.end, rookDestination}, board, handler, true);
+    performMove({move.end, rookDestination}, handler, true);
 
     // Move the King
-    performMove({move.start, kingDestination}, board, handler, true);
-
+    performMove({move.start, kingDestination}, handler, true);
+    lastmove.code = NONE;
+    lastmove.start = {-1,-1};
+    lastmove.end = {-1,-1};
+    lastmove.firstMove = false;
     // Add new threatened squares cost
     for (const auto& coord :
          board[kingDestination.first][kingDestination.second]->getAttackCandidates(true))
@@ -904,8 +957,10 @@ float ChessBoard::performCastling(
  *        If notImaginary is false, logger pointers will be set to null.
  */
 ChessPieceBase*** ChessBoard::copyBoard(
-    ChessPieceBase*** board, bool notImaginary
+    ChessBoard* chessBoardOld, ChessBoard* chessBoardNew,
+     bool notImaginary
 ) {
+    ChessPieceBase*** board = chessBoardOld->getBoard();
     if (!board) {
         return nullptr;
     }
@@ -929,7 +984,7 @@ ChessPieceBase*** ChessBoard::copyBoard(
                     board[i][j]->isWhite(),
                     board[i][j]->getCode(),
                     (Logger*)((size_t)board[i][j]->getLogger() * notImaginary),
-                    newBoard,
+                    chessBoardNew,
                     board[i][j]->hasMoved()
                 );
                 if (!pieceCopy) {
@@ -944,42 +999,43 @@ ChessPieceBase*** ChessBoard::copyBoard(
     return newBoard;
 }
 
+
 /**
  * @brief Revert the 'imaginaryBoard' to match 'board'.
  *        This effectively copies board's state into imaginaryBoard's state.
  */
 void ChessBoard::revertBoard(
-    ChessPieceBase*** imaginaryBoard,
-    ChessPieceBase*** board
+    ChessBoard* imaginaryBoard,
+    ChessBoard* board
 ) {
     if (!board || !imaginaryBoard) {
         throw std::runtime_error("CRITICAL ERROR, IMPOSSIBLE TO REVERT BOARD");
     }
 
     for (int i = 0; i < BOARDSIZE; ++i) {
-        if (!board[i] || !imaginaryBoard[i]) {
+        if (!board->board[i] || !imaginaryBoard->board[i]) {
             throw std::runtime_error("CRITICAL ERROR, IMPOSSIBLE TO REVERT BOARD");
         }
         for (int j = 0; j < BOARDSIZE; ++j) {
-            if (!board[i][j]) {
+            if (!board->board[i][j]) {
                 throw std::runtime_error("CRITICAL ERROR, IMPOSSIBLE TO REVERT BOARD");
             }
             ChessPieceBase* pieceCopy = ChessBoard::createPeice(
-                board[i][j]->getX(),
-                board[i][j]->getY(),
-                board[i][j]->isWhite(),
-                board[i][j]->getCode(),
+                board->board[i][j]->getX(),
+                board->board[i][j]->getY(),
+                board->board[i][j]->isWhite(),
+                board->board[i][j]->getCode(),
                 nullptr,
                 imaginaryBoard,
-                board[i][j]->hasMoved()
+                board->board[i][j]->hasMoved()
             );
             if (!pieceCopy) {
                 throw std::runtime_error(
                     "CRITICAL ERROR, IMPOSSIBLE TO REVERT BOARD"
                 );
             }
-            delete imaginaryBoard[i][j];
-            imaginaryBoard[i][j] = pieceCopy;
+            delete imaginaryBoard->board[i][j];
+            imaginaryBoard->board[i][j] = pieceCopy;
         }
     }
 }
@@ -1018,7 +1074,7 @@ void ChessBoard::cycleFigure(std::pair<int, int> pos, bool color, ChessPieceCode
     {
         if (!board[pos.first][pos.second]) {
             board[pos.first][pos.second] =
-                createPeice(pos.second, pos.first, color, code, log, board);
+                createPeice(pos.second, pos.first, color, code, log, this);
             return;
         }
 
@@ -1027,10 +1083,10 @@ void ChessBoard::cycleFigure(std::pair<int, int> pos, bool color, ChessPieceCode
 
         if (existingCode == EMPTY) {
             board[pos.first][pos.second] =
-                createPeice(pos.second, pos.first, color, code, log, board);
+                createPeice(pos.second, pos.first, color, code, log, this);
         } else {
             board[pos.first][pos.second] =
-                createPeice(pos.second, pos.first, color, EMPTY, log, board);
+                createPeice(pos.second, pos.first, color, EMPTY, log, this);
         }
     }
 }

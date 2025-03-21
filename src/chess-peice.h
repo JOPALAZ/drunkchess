@@ -16,7 +16,7 @@
  * @brief The maximum allowed recursion depth (for example, in AI search).
  */
 #define MAXDEPTH 256
-
+class ChessBoard;
 /**
  * @class ChessPieceBase
  * @brief Base class for all chess pieces.
@@ -53,9 +53,9 @@ protected:
   Logger *log = nullptr;
 
   /**
-   * @brief Pointer to the 2D array (board) of ChessPieceBase pointers.
+   * @brief Pointer to the board.
    */
-  ChessPieceBase ***board = nullptr;
+  ChessBoard *chessBoard = nullptr;
 
   /**
    * @brief The current x-coordinate of the piece on the board.
@@ -104,7 +104,7 @@ public:
    * @brief Provides access to the board pointer.
    * @return A triple-pointer to ChessPieceBase.
    */
-  ChessPieceBase ***getBoard() { return board; }
+  ChessPieceBase ***getBoard();
 
   /**
    * @brief Provides access to the logger instance.
@@ -133,7 +133,11 @@ public:
   /**
    * @brief Default constructor.
    */
-  ChessPieceBase() = default;
+  ChessPieceBase() = delete;
+
+
+  ChessPieceBase(int x, int y, bool color, Logger *log,
+    ChessBoard *board, bool moved_);
 
   /**
    * @brief Retrieves all possible move positions for this piece.
@@ -188,7 +192,7 @@ public:
    * @param log Pointer to the logger instance.
    * @param board Pointer to the board array.
    */
-  ChessPieceEmpty(int x, int y, Logger *log, ChessPieceBase ***board);
+  ChessPieceEmpty(int x, int y, Logger *log, ChessBoard *board);
 
   /**
    * @brief Retrieves possible moves for an empty square (none).
@@ -240,7 +244,7 @@ public:
    * @param moved_ Indicates whether the pawn has moved before.
    */
   ChessPiecePawn(int x, int y, bool color, Logger *log,
-                 ChessPieceBase ***board, bool moved_ = false);
+                 ChessBoard *board, bool moved_ = false);
 
   /**
    * @brief Retrieves possible moves for this pawn.
@@ -278,7 +282,7 @@ public:
    * @param moved_ Indicates whether the knight has moved before.
    */
   ChessPieceKnight(int x, int y, bool color, Logger *log,
-                   ChessPieceBase ***board, bool moved_ = false);
+                   ChessBoard *board, bool moved_ = false);
 
   /**
    * @brief Retrieves possible moves for the knight (in an L shape).
@@ -316,7 +320,7 @@ public:
    * @param moved_ Indicates whether the rook has moved before.
    */
   ChessPieceRook(int x, int y, bool color, Logger *log,
-                 ChessPieceBase ***board, bool moved_ = false);
+                 ChessBoard *board, bool moved_ = false);
 
   /**
    * @brief Retrieves possible moves for the rook (horizontal and vertical).
@@ -354,7 +358,7 @@ public:
    * @param moved_ Indicates whether the bishop has moved before.
    */
   ChessPieceBishop(int x, int y, bool color, Logger *log,
-                   ChessPieceBase ***board, bool moved_ = false);
+                   ChessBoard *board, bool moved_ = false);
 
   /**
    * @brief Retrieves possible moves for the bishop (diagonal directions).
@@ -392,7 +396,7 @@ public:
    * @param moved_ Indicates whether the queen has moved before.
    */
   ChessPieceQueen(int x, int y, bool color, Logger *log,
-                  ChessPieceBase ***board, bool moved_ = false);
+                  ChessBoard *board, bool moved_ = false);
 
   /**
    * @brief Retrieves possible moves for the queen (combining rook and bishop moves).
@@ -430,7 +434,7 @@ public:
    * @param moved_ Indicates whether the king has moved before.
    */
   ChessPeiceKing(int x, int y, bool color, Logger *log, 
-                 ChessPieceBase ***board, bool moved_ = false);
+                 ChessBoard *board, bool moved_ = false);
 
   /**
    * @brief Retrieves possible moves for the king (one square in any direction).
